@@ -90,7 +90,7 @@ export default function ProductShowcase() {
 
       <div className="text-center mt-10">
         <Button variant="outline" className="gap-2">
-         <Link href='/view-more'>View More</Link>
+         <Link href='/shop'>View More</Link>
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
