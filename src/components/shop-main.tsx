@@ -27,6 +27,8 @@ import mainsofy from "/public/mainsofy.png"
 import mainarea from "/public/mainarea.png"
 import mainguestroom from "/public/mainguestroom.png"
 
+
+
 interface Product {
   id: string
   name: string
@@ -237,3 +239,4 @@ export default function ShopMain() {
     </>
   )
 }
+

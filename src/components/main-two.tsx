@@ -79,7 +79,7 @@ export default function MainTwo() {
 
           <div className="text-center mt-12">
             <Link 
-              href="/blog"
+              href="/about"
               className="inline-block border-b-2 border-primary pb-1 font-medium text-primary hover:text-primary/90 transition-colors"
             >
               View All Posts

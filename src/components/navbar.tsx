@@ -90,22 +90,30 @@ function NavLinks({ mobile = false }: { mobile?: boolean }) {
 function NavIcons() {
   return (
     <>
+    <Link href='/account'>
       <button className="p-2">
         <User className="h-5 w-5" />
         <span className="sr-only">Account</span>
       </button>
+      </Link>
+     <Link href='/cart'>
       <button className="p-2">
         <Search className="h-5 w-5" />
         <span className="sr-only">Search</span>
       </button>
+      </Link>
+      <Link href='/heart'>
       <button className="p-2">
         <Heart className="h-5 w-5" />
         <span className="sr-only">Wishlist</span>
       </button>
+      </Link>
+     <Link href='/checkout'>
       <button className="p-2">
         <ShoppingCart className="h-5 w-5" />
         <span className="sr-only">Cart</span>
       </button>
+      </Link>
     </>
   )
 }

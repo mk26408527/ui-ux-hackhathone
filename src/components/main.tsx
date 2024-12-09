@@ -67,7 +67,7 @@ export default function ProductShowcase() {
             <CardHeader className="p-0">
               <div className="aspect-square relative overflow-hidden rounded-lg">
                 <Image
-                  src={product.image} // This can now accept both string or StaticImageData
+                  src={product.image} 
                   alt={product.name}
                   fill
                   className="object-cover transition-transform hover:scale-105"
@@ -115,12 +115,14 @@ export default function ProductShowcase() {
               Asgaard sofa
             </h1>
           </div>
-          <Button 
+         <Link href='/heart'>
+           <Button 
             variant="outline" 
-            className="rounded-none border-black text-black hover:bg-black hover:text-white transition-colors px-8 py-6 text-lg"
+            className="rounded-none border-black text-black hover:bg-black hover:text-white transition-colors px-8 py-6 mt-5 text-lg"
           >
             Order Now
           </Button>
+          </Link>
         </div>
       </div>
     </div>

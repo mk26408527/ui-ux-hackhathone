@@ -44,7 +44,7 @@ export default function ShopPage() {
               Home
             </Link>
             <span>›</span>
-            <span>Shop</span>
+            <Link href='/'><span>Shop</span></Link>
           </div>
         </div>
       </div>
