@@ -152,7 +152,7 @@ export default function ShopMain() {
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="flex flex-col items-center gap-2">
-                    <Button variant="secondary" className="w-40">
+                  <Button variant="secondary" className="w-40">
                       <ShoppingCart className="mr-2 h-4 w-4" />
                       Add to Cart
                     </Button>

@@ -56,7 +56,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="mt-12 pt-8 border-t border-gray-200">
-          <p className="text-sm">2022 Meubel House. All rights reserved</p>
+          <p className="text-sm">@{new Date().getFullYear()} Meubel House. All rights reserved</p>
         </div>
       </div>
     </footer>

@@ -30,6 +30,7 @@ export default function ContactPage() {
             </svg>
           </div>
           <h1 className="text-4xl font-bold text-black">Contact</h1>
+          
           {/* Breadcrumb */}
           <div className="mt-4 flex items-center space-x-2 text-sm text-black">
             <Link href="/" className="underline underline-offset-2 hover:underline">
@@ -85,11 +86,12 @@ export default function ContactPage() {
           {/* Contact Form */}
           <div className="space-y-6">
             <h2 className="text-2xl font-semibold">Contact Us</h2>
-            <form className="space-y-4">
+            <form action="https://formspree.io/f/xovqoyyv" method="POST" className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-600">Your Name</label>
                 <input
                   id="name"
+                  name="name"
                   type="text"
                   placeholder="Abc"
                   className="mt-1 block w-full border rounded-md px-3 py-2 text-gray-800"
@@ -101,6 +103,7 @@ export default function ContactPage() {
                 <input
                   id="email"
                   type="email"
+                  name="email"
                   placeholder="abc@email.com"
                   className="mt-1 block w-full border rounded-md px-3 py-2 text-gray-800"
                 />
@@ -111,6 +114,7 @@ export default function ContactPage() {
                 <input
                   id="subject"
                   type="text"
+                  name="subject"
                   placeholder="Optional"
                   className="mt-1 block w-full border rounded-md px-3 py-2 text-gray-800"
                 />
@@ -120,6 +124,7 @@ export default function ContactPage() {
                 <label htmlFor="message" className="block text-sm font-medium text-gray-600">Message</label>
                 <textarea
                   id="message"
+                  name="message"
                   placeholder="Hi! I'd like to ask about!"
                   rows={4}
                   className="mt-1 block w-full border rounded-md px-3 py-2 text-gray-800"
