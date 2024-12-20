@@ -125,9 +125,11 @@ export default function ShoppingCart() {
                     Rs. {250000 * quantity}.00
                   </span>
                 </div>
-                <Button className="w-full bg-black hover:bg-gray-800 text-white rounded-lg py-3 mt-4">
+               <Link href='checkout'>
+               <Button className="w-full bg-black hover:bg-gray-800 text-white rounded-lg py-3 mt-4">
                   Check Out
                 </Button>
+               </Link>
               </div>
             </div>
           </div>
