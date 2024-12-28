@@ -23,24 +23,14 @@ export default function ShoppingCart() {
         />
         <div className="absolute inset-0 bg-black/20" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          {/* Logo */}
-          <div className="mb-4">
-            <svg
-              className="h-8 w-8 text-yellow-500"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M12 3L2 12h3v8h14v-8h3L12 3z" />
-            </svg>
-          </div>
-          <h1 className="text-4xl font-bold text-black">Cart</h1>
+          <h1 className="text-4xl font-bold text-black">Shopping Cart</h1>
           {/* Breadcrumb */}
           <div className="mt-4 flex items-center space-x-2 text-sm text-black">
             <Link href="/" className="hover:underline">
               Home
             </Link>
             <span>›</span>
-            <Link href="/contact" className="hover:underline">
+            <Link href="/cart" className="hover:underline">
               Cart
             </Link>
           </div>
@@ -113,7 +103,7 @@ export default function ShoppingCart() {
           {/* Cart Totals */}
           <div className="lg:col-span-1">
             <div className="bg-[#FDF9F0] rounded-lg p-6">
-              <h2 className="text-2xl font-bold mb-28">Cart Totals</h2>
+              <h2 className="text-2xl font-bold mb-6">Cart Totals</h2>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-base">Subtotal</span>
@@ -125,9 +115,9 @@ export default function ShoppingCart() {
                     Rs. {250000 * quantity}.00
                   </span>
                 </div>
-               <Link href='checkout'>
-               <Button className="w-full bg-black hover:bg-gray-800 text-white rounded-lg py-3 mt-4">
-                  Check Out
+               <Link href='/checkout'>
+               <Button className="w-full bg-[#B88E2F] hover:bg-[#A47E2F] text-white rounded-lg py-3 mt-4">
+                  Proceed to Checkout
                 </Button>
                </Link>
               </div>
@@ -135,30 +125,7 @@ export default function ShoppingCart() {
           </div>
         </div>
       </div>
-
-      {/* Features */}
-      <div className="bg-[#FDF7FC] px-4 py-16">
-        <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2 lg:grid-cols-3">
-          <div className="space-y-2">
-            <h3 className="text-lg font-medium">Free Delivery</h3>
-            <p className="text-sm text-muted-foreground">
-              For all orders over $50, consectetur adipiscing elit.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-medium">90 Days Return</h3>
-            <p className="text-sm text-muted-foreground">
-              If goods have problems, consectetur adipiscing elit.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-medium">Secure Payment</h3>
-            <p className="text-sm text-muted-foreground">
-              100% secure payment, consectetur adipiscing elit.
-            </p>
-          </div>
-        </div>
-      </div>
     </>
   );
 }
+
