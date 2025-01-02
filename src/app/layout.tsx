@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import "./globals.css";
-import NavBar  from "@/components/navbar";
+import "@/app/globals.css";
+import NavBar from "@/components/navbar";
 import Footer from "@/components/footer";
+import { CartProvider } from '@/components/cart-context';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
   weight: "100 900",
 });
+
 const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
@@ -22,17 +26,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <NavBar />
-        {children}
-        <Footer />
+        <CartProvider>
+          <NavBar />
+          {children}
+          <Footer />
+          <ToastContainer position="bottom-right" autoClose={3000} />
+        </CartProvider>
       </body>
     </html>
   );

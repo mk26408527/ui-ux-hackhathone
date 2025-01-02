@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import Image from "next/image"
-import Link from "next/link"
-import shopheader from "/public/shopheader.png"
-import { FaMapMarkerAlt, FaPhone, FaClock } from 'react-icons/fa'
+import Image from "next/image";
+import Link from "next/link";
+import shopheader from "/public/shopheader.png";
+import { FaMapMarkerAlt, FaPhone, FaClock } from "react-icons/fa";
 
 export default function ContactPage() {
   return (
@@ -20,24 +20,21 @@ export default function ContactPage() {
         <div className="absolute inset-0 bg-black/20" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           {/* Logo */}
-          <div className="mb-4">
-            <svg
-              className="h-8 w-8 text-yellow-500"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M12 3L2 12h3v8h14v-8h3L12 3z" />
-            </svg>
-          </div>
+          <Image src="/brand.png" alt="logo" width={77} height={77} />
           <h1 className="text-4xl font-bold text-black">Contact</h1>
-          
+
           {/* Breadcrumb */}
           <div className="mt-4 flex items-center space-x-2 text-sm text-black">
-            <Link href="/" className="underline underline-offset-2 hover:underline">
+            <Link
+              href="/"
+              className="underline underline-offset-2 hover:underline"
+            >
               Home
             </Link>
             <span>›</span>
-            <Link className="hover:underline" href='/about'>Blog</Link>
+            <Link className="hover:underline" href="/about">
+              Blog
+            </Link>
           </div>
         </div>
       </div>
@@ -49,7 +46,9 @@ export default function ContactPage() {
           <div className="space-y-6">
             <h2 className="text-2xl font-semibold">Get In Touch With Us</h2>
             <p className="text-gray-600">
-              For more information about our products and services, please feel free to drop us an email. Our staff will always be there to help you out.
+              For more information about our products and services, please feel
+              free to drop us an email. Our staff will always be there to help
+              you out.
             </p>
 
             <div className="space-y-4">
@@ -86,9 +85,18 @@ export default function ContactPage() {
           {/* Contact Form */}
           <div className="space-y-6">
             <h2 className="text-2xl font-semibold">Contact Us</h2>
-            <form action="https://formspree.io/f/xovqoyyv" method="POST" className="space-y-4">
+            <form
+              action="https://formspree.io/f/xovqoyyv"
+              method="POST"
+              className="space-y-4"
+            >
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-600">Your Name</label>
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-600"
+                >
+                  Your Name
+                </label>
                 <input
                   id="name"
                   name="name"
@@ -99,7 +107,12 @@ export default function ContactPage() {
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-600">Email Address</label>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-600"
+                >
+                  Email Address
+                </label>
                 <input
                   id="email"
                   type="email"
@@ -110,7 +123,12 @@ export default function ContactPage() {
               </div>
 
               <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-gray-600">Subject</label>
+                <label
+                  htmlFor="subject"
+                  className="block text-sm font-medium text-gray-600"
+                >
+                  Subject
+                </label>
                 <input
                   id="subject"
                   type="text"
@@ -121,7 +139,12 @@ export default function ContactPage() {
               </div>
 
               <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-600">Message</label>
+                <label
+                  htmlFor="message"
+                  className="block text-sm font-medium text-gray-600"
+                >
+                  Message
+                </label>
                 <textarea
                   id="message"
                   name="message"
@@ -166,6 +189,5 @@ export default function ContactPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

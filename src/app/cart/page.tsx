@@ -1,14 +1,24 @@
-'use client'
+/* eslint-disable react/no-unescaped-entities */
+'use client';
 
-import Image from "next/image";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import Link from "next/link";
-import shopheader from "/public/shopheader.png";
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import Link from 'next/link';
+import shopheader from '/public/shopheader.png';
+import { useCart } from '@/components/cart-context';
 
 export default function ShoppingCart() {
-  const [quantity, setQuantity] = useState(1);
+  const { state, dispatch } = useCart();
+
+  const updateQuantity = (id: string, quantity: number) => {
+    if (quantity < 1) return;
+    dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
+  };
+
+  const removeItem = (id: string) => {
+    dispatch({ type: 'REMOVE_FROM_CART', payload: id });
+  };
 
   return (
     <>
@@ -23,6 +33,8 @@ export default function ShoppingCart() {
         />
         <div className="absolute inset-0 bg-black/20" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+          {/* Logo */}
+          <Image src="/brand.png" alt="logo" width={77} height={77} />
           <h1 className="text-4xl font-bold text-black">Shopping Cart</h1>
           {/* Breadcrumb */}
           <div className="mt-4 flex items-center space-x-2 text-sm text-black">
@@ -50,53 +62,83 @@ export default function ShoppingCart() {
                 <div className="col-span-2 text-base font-medium">Subtotal</div>
               </div>
 
-              {/* Cart Item */}
-              <div className="grid grid-cols-12 gap-4 p-4 items-center border-b">
-                <div className="col-span-6 flex items-center gap-4">
-                  <div className="relative h-20 w-20 rounded-lg bg-[#FDF9F0] p-2">
-                    <Image
-                      src="/mainsofy.png"
-                      alt="Asgaard sofa"
-                      width={80}
-                      height={80}
-                      className="object-cover"
-                    />
-                  </div>
-                  <span className="text-gray-600">Asgaard sofa</span>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-gray-600">Rs. 250,000.00</span>
-                </div>
-                <div className="col-span-2">
-                  <Input
-                    type="number"
-                    value={quantity}
-                    min="1"
-                    onChange={(e) => setQuantity(Number(e.target.value))}
-                    className="w-16 text-center"
-                  />
-                </div>
-                <div className="col-span-2 flex items-center justify-between">
-                  <span className="text-gray-600">
-                    Rs. {250000 * quantity}.00
-                  </span>
-                  <button className="text-gray-400 hover:text-gray-600">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
+              {/* Conditional rendering based on cart contents */}
+              {state.items.length > 0 ? (
+                // Render cart items
+                state.items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="grid grid-cols-12 gap-4 p-4 items-center border-b"
+                  >
+                    <div className="col-span-6 flex items-center gap-4">
+                      <div className="relative h-20 w-20 rounded-lg bg-[#FDF9F0] p-2">
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <span className="text-gray-600">{item.name}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-gray-600">
+                        Rs. {item.price.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <Input
+                        type="number"
+                        value={item.quantity}
+                        min="1"
+                        onChange={(e) =>
+                          updateQuantity(item.id, Number(e.target.value))
+                        }
+                        className="w-16 text-center"
                       />
-                    </svg>
-                  </button>
+                    </div>
+                    <div className="col-span-2 flex items-center justify-between">
+                      <span className="text-gray-600">
+                        Rs. {(item.price * item.quantity).toLocaleString()}
+                      </span>
+                      <button
+                        className="text-gray-400 hover:text-gray-600"
+                        onClick={() => removeItem(item.id)}
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                // Render empty cart message
+                <div className="grid grid-cols-12 p-6 text-center text-gray-600">
+                  <div className="col-span-12">
+                    <p className="text-2xl font-bold">Your cart is empty.</p>
+                    <p className="mt-4">
+                      Looks like you haven't added anything to your cart yet.
+                    </p>
+                    <Link
+                      href="/shop"
+                      className="mt-6 inline-block bg-[#B88E2F] text-white px-6 py-2 rounded-lg hover:bg-[#A47E2F]"
+                    >
+                      Continue Shopping
+                    </Link>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -107,19 +149,23 @@ export default function ShoppingCart() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-base">Subtotal</span>
-                  <span className="text-gray-600">Rs. {250000 * quantity}.00</span>
+                  <span className="text-gray-600">
+                    Rs. {state.total.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-base font-medium">Total</span>
                   <span className="text-[#B88E2F] text-xl">
-                    Rs. {250000 * quantity}.00
+                    Rs. {state.total.toLocaleString()}
                   </span>
                 </div>
-               <Link href='/checkout'>
-               <Button className="w-full bg-[#B88E2F] hover:bg-[#A47E2F] text-white rounded-lg py-3 mt-4">
-                  Proceed to Checkout
-                </Button>
-               </Link>
+                {state.items.length > 0 && (
+                  <Link href="/checkout">
+                    <Button className="w-full bg-[#B88E2F] hover:bg-[#A47E2F] text-white rounded-lg py-3 mt-4">
+                      Proceed to Checkout
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -128,4 +174,3 @@ export default function ShoppingCart() {
     </>
   );
 }
-

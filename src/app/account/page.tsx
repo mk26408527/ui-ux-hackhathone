@@ -19,15 +19,7 @@ function MyAccount() {
         <div className="absolute inset-0 bg-black/20" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           {/* Logo */}
-          <div className="mb-4">
-            <svg
-              className="h-8 w-8 text-yellow-500"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M12 3L2 12h3v8h14v-8h3L12 3z" />
-            </svg>
-          </div>
+            <Image src="/brand.png" alt="logo" width={77} height={77} />
           <h1 className="text-4xl font-bold text-black">My Account</h1>
           {/* Breadcrumb */}
           <div className="mt-4 flex items-center space-x-2 text-sm text-black">
