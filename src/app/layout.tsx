@@ -8,7 +8,7 @@ import { WishlistProvider } from "@/components/wishlist-context";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { ClerkProvider } from "@clerk/nextjs";
-
+import Script from "next/script"; // Import Script for chatbot
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -35,6 +35,28 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
+        <head className="md:p-8 lg:p-11">
+          {/* Chatbot Configuration Script */}
+          <Script
+            id="chatbot-config"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.embeddedChatbotConfig = {
+                  chatbotId: "uhmozxi9UYSh5lFd_QXTB", // Your Chatbot ID
+                  domain: "www.chatbase.co"
+                };
+              `,
+            }}
+          />
+          <Script
+            src="https://www.chatbase.co/embed.min.js"
+            data-chatbot-id="uhmozxi9UYSh5lFd_QXTB" // Your Chatbot ID
+            data-domain="www.chatbase.co"
+            strategy="afterInteractive"
+            defer
+          />
+        </head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
