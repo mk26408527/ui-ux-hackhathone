@@ -2,12 +2,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X } from 'lucide-react';
-import { useCart } from '@/components/cart-context';
 import { DialogTitle } from '@radix-ui/react-dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { useCart } from '@/components/cart-context';
 
 export default function CartSidebar() {
   const { state, dispatch } = useCart();
@@ -102,3 +102,4 @@ export default function CartSidebar() {
     </div>
   );
 }
+

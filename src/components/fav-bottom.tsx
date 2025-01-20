@@ -1,5 +1,4 @@
 import Image from "next/image"
-import Link from "next/link"
 
 export default function FavBottom() {
   const products = [
@@ -48,14 +47,7 @@ export default function FavBottom() {
           </div>
         ))}
       </div>
-      <div className="text-center mt-10">
-        <Link 
-          href="/shop" 
-          className="inline-block border-b-2 border-black pb-1 text-sm font-medium hover:border-gray-500 transition-colors"
-        >
-          View More
-        </Link>
-      </div>
+    
     </section>
   )
 }

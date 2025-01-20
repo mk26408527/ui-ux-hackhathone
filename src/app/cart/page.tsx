@@ -1,21 +1,24 @@
-/* eslint-disable react/no-unescaped-entities */
 'use client';
+/* eslint-disable react/no-unescaped-entities */
 
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import shopheader from '/public/shopheader.png';
+import shopheader from '../../../public/shopheader.png';
 import { useCart } from '@/components/cart-context';
 
 export default function ShoppingCart() {
+  // Get state and dispatch from the cart context
   const { state, dispatch } = useCart();
 
+  // Function to update the quantity of an item in the cart
   const updateQuantity = (id: string, quantity: number) => {
     if (quantity < 1) return;
     dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
   };
 
+  // Function to remove an item from the cart
   const removeItem = (id: string) => {
     dispatch({ type: 'REMOVE_FROM_CART', payload: id });
   };
@@ -23,7 +26,7 @@ export default function ShoppingCart() {
   return (
     <>
       {/* Hero Section with Background */}
-      <div className="relative h-[300px] w-full">
+      <div className="relative h-[200px] sm:h-[300px] w-full">
         <Image
           src={shopheader}
           alt="Shop Header"
@@ -35,9 +38,9 @@ export default function ShoppingCart() {
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           {/* Logo */}
           <Image src="/brand.png" alt="logo" width={77} height={77} />
-          <h1 className="text-4xl font-bold text-black">Shopping Cart</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold text-black">Shopping Cart</h1>
           {/* Breadcrumb */}
-          <div className="mt-4 flex items-center space-x-2 text-sm text-black">
+          <div className="mt-2 sm:mt-4 flex items-center space-x-2 text-sm text-black">
             <Link href="/" className="hover:underline">
               Home
             </Link>
@@ -55,7 +58,7 @@ export default function ShoppingCart() {
           <div className="lg:col-span-2">
             <div className="rounded-lg overflow-hidden">
               {/* Header */}
-              <div className="grid grid-cols-12 gap-4 bg-[#FDF9F0] p-4">
+              <div className="hidden sm:grid grid-cols-12 gap-4 bg-[#FDF9F0] p-4">
                 <div className="col-span-6 text-base font-medium">Product</div>
                 <div className="col-span-2 text-base font-medium">Price</div>
                 <div className="col-span-2 text-base font-medium">Quantity</div>
@@ -70,7 +73,7 @@ export default function ShoppingCart() {
                     key={item.id}
                     className="grid grid-cols-12 gap-4 p-4 items-center border-b"
                   >
-                    <div className="col-span-6 flex items-center gap-4">
+                    <div className="col-span-12 sm:col-span-6 flex items-center gap-4">
                       <div className="relative h-20 w-20 rounded-lg bg-[#FDF9F0] p-2">
                         <Image
                           src={item.image}
@@ -81,12 +84,12 @@ export default function ShoppingCart() {
                       </div>
                       <span className="text-gray-600">{item.name}</span>
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-12 sm:col-span-2">
                       <span className="text-gray-600">
                         Rs. {item.price.toLocaleString()}
                       </span>
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-12 sm:col-span-2">
                       <Input
                         type="number"
                         value={item.quantity}
@@ -97,7 +100,7 @@ export default function ShoppingCart() {
                         className="w-16 text-center"
                       />
                     </div>
-                    <div className="col-span-2 flex items-center justify-between">
+                    <div className="col-span-12 sm:col-span-2 flex items-center justify-between">
                       <span className="text-gray-600">
                         Rs. {(item.price * item.quantity).toLocaleString()}
                       </span>

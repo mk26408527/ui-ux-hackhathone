@@ -2,25 +2,31 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Heart, Menu, Search, ShoppingCart, User, X } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Heart, Menu, ShoppingCart, User } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import CartSidebar from "@/components/CartSidebar";
 import { useCart } from "@/components/cart-context";
+import { useWishlist } from "@/components/wishlist-context";
 import Image from "next/image";
+import { useUser, UserButton, SignInButton } from "@clerk/nextjs";
 
 export default function NavBar() {
-  const [isOpen, setIsOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isMobile, setIsMobile] = useState(false);
-  const { state } = useCart();
+  const { state: cartState } = useCart();
+  const { state: wishlistState } = useWishlist();
   const [isScrolled, setIsScrolled] = useState(false);
+  const { isSignedIn = false, user } = useUser();
 
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth >= 768) {
-        setIsOpen(false);
-      }
     };
 
     checkIsMobile();
@@ -41,14 +47,12 @@ export default function NavBar() {
     };
   }, []);
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
-
   return (
     <nav
-      className={`bg-[#FBEBB5] px-4 py-4 w-full transition-all duration-300 ${
-        isScrolled ? "fixed top-0 left-0 right-0 z-50 shadow-md" : ""
+      className={`px-4 py-4 w-full transition-all duration-300 ${
+        isScrolled
+          ? "fixed top-0 left-0 right-0 z-50 backdrop-filter backdrop-blur-lg bg-transparent shadow-md"
+          : "bg-[#FBEBB5]"
       }`}
     >
       <div className="max-w-7xl mx-auto">
@@ -66,30 +70,31 @@ export default function NavBar() {
           {/* Right Section (Icons) */}
           <div className="flex items-center space-x-2 sm:space-x-5">
             <NavIcons
-              cartItemCount={state.items.reduce(
+              cartItemCount={cartState.items.reduce(
                 (sum, item) => sum + item.quantity,
                 0
               )}
+              wishlistItemCount={wishlistState.items.length}
+              isSignedIn={isSignedIn}
+              user={user}
             />
             {/* Hamburger Menu - Visible only on mobile */}
-            <button className="md:hidden p-2" onClick={toggleMenu}>
-              {isOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </button>
-          </div>
-        </div>
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="md:hidden p-2">
+                  <Menu className="h-6 w-6" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <SheetTitle>
+                  <VisuallyHidden>Mobile Menu</VisuallyHidden>
+                </SheetTitle>
 
-        {/* Mobile Menu */}
-        <div
-          className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
-            isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-          }`}
-        >
-          <div className="pt-4 pb-2 space-y-2 text-center">
-            <NavLinks mobile />
+                <div className="pt-4 pb-2 space-y-2">
+                  <NavLinks mobile />
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>
@@ -104,7 +109,7 @@ function NavLinks({ mobile = false }: { mobile?: boolean }) {
 
   return (
     <>
-      <li className="group">
+      <li className="group list-none">
         <Link href="/" className={linkClass}>
           Home
           {!mobile && (
@@ -112,7 +117,7 @@ function NavLinks({ mobile = false }: { mobile?: boolean }) {
           )}
         </Link>
       </li>
-      <li className="group">
+      <li className="group list-none">
         <Link href="/shop" className={linkClass}>
           Shop
           {!mobile && (
@@ -120,7 +125,7 @@ function NavLinks({ mobile = false }: { mobile?: boolean }) {
           )}
         </Link>
       </li>
-      <li className="group">
+      <li className="group list-none">
         <Link href="/about" className={linkClass}>
           About
           {!mobile && (
@@ -128,7 +133,7 @@ function NavLinks({ mobile = false }: { mobile?: boolean }) {
           )}
         </Link>
       </li>
-      <li className="group">
+      <li className="group list-none">
         <Link href="/contact" className={linkClass}>
           Contact
           {!mobile && (
@@ -140,24 +145,39 @@ function NavLinks({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
-function NavIcons({ cartItemCount }: { cartItemCount: number }) {
+interface NavIconsProps {
+  cartItemCount: number;
+  wishlistItemCount: number;
+  isSignedIn: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  user: any;
+}
+
+function NavIcons({
+  cartItemCount,
+  wishlistItemCount,
+  isSignedIn,
+}: NavIconsProps) {
   return (
     <>
-      <Link href="/account">
-        <button className="p-1 sm:p-2">
-          <User className="h-5 w-5" />
-          <span className="sr-only">Account</span>
-        </button>
-      </Link>
-      <Link href="/search">
-        <button className="p-1 sm:p-2">
-          <Search className="h-5 w-5" />
-          <span className="sr-only">Search</span>
-        </button>
-      </Link>
+      {isSignedIn ? (
+        <UserButton afterSignOutUrl="/" />
+      ) : (
+        <SignInButton mode="redirect">
+          <button className="p-1 sm:p-2">
+            <User className="h-5 w-5" />
+            <span className="sr-only">Account</span>
+          </button>
+        </SignInButton>
+      )}
       <Link href="/wishlist">
-        <button className="p-1 sm:p-2">
+        <button className="p-1 sm:p-2 relative">
           <Heart className="h-5 w-5" />
+          {wishlistItemCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-primary text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
+              {wishlistItemCount}
+            </span>
+          )}
           <span className="sr-only">Wishlist</span>
         </button>
       </Link>
@@ -173,10 +193,14 @@ function NavIcons({ cartItemCount }: { cartItemCount: number }) {
             <span className="sr-only">Cart</span>
           </button>
         </SheetTrigger>
-        <SheetContent>
+        <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+          <SheetTitle>
+            <VisuallyHidden>Cart</VisuallyHidden>
+          </SheetTitle>
           <CartSidebar />
         </SheetContent>
       </Sheet>
     </>
   );
 }
+

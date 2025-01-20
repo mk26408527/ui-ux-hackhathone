@@ -1,23 +1,22 @@
 'use client'
 
 import React, { createContext, useContext, useReducer, ReactNode } from 'react'
-import { StaticImageData } from 'next/image'
 
-export interface CartItem {
+interface Product {
   id: string
   name: string
   price: number
-  image: StaticImageData
+  image: string
   quantity: number
 }
 
 interface CartState {
-  items: CartItem[]
+  items: Product[]
   total: number
 }
 
 type CartAction =
-  | { type: 'ADD_TO_CART'; payload: CartItem }
+  | { type: 'ADD_TO_CART'; payload: Product }
   | { type: 'REMOVE_FROM_CART'; payload: string }
   | { type: 'UPDATE_QUANTITY'; payload: { id: string; quantity: number } }
   | { type: 'CLEAR_CART' }
@@ -30,14 +29,16 @@ const CartContext = createContext<{
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case 'ADD_TO_CART': {
-      const existingItemIndex = state.items.findIndex(item => item.id === action.payload.id)
+      const existingItem = state.items.find(item => item.id === action.payload.id)
       
-      if (existingItemIndex !== -1) {
-        const updatedItems = [...state.items]
-        updatedItems[existingItemIndex].quantity += action.payload.quantity
+      if (existingItem) {
         return {
           ...state,
-          items: updatedItems,
+          items: state.items.map(item =>
+            item.id === action.payload.id
+              ? { ...item, quantity: item.quantity + action.payload.quantity }
+              : item
+          ),
           total: state.total + (action.payload.price * action.payload.quantity)
         }
       }
@@ -57,14 +58,16 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       }
     case 'UPDATE_QUANTITY': {
       const { id, quantity } = action.payload
-      const updatedItems = state.items.map(item =>
-        item.id === id ? { ...item, quantity: quantity } : item
-      )
-      const newTotal = updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+      const item = state.items.find(item => item.id === id)
+      if (!item) return state
+
+      const quantityDiff = quantity - item.quantity
       return {
         ...state,
-        items: updatedItems,
-        total: newTotal
+        items: state.items.map(item =>
+          item.id === id ? { ...item, quantity } : item
+        ),
+        total: state.total + (item.price * quantityDiff)
       }
     }
     case 'CLEAR_CART':

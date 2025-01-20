@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { CheckCircle2 } from "lucide-react";
 
+// Define the structure of the form data
 interface FormData {
   firstName: string;
   lastName: string;
@@ -37,6 +38,7 @@ const Checkout: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const router = useRouter();
 
+  // Initialize form data state
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
@@ -51,8 +53,10 @@ const Checkout: React.FC = () => {
     additionalInfo: "",
   });
 
+  // Initialize form errors state
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
+  // Handle input change and update form data state
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -60,6 +64,7 @@ const Checkout: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Validate form data and set errors if any
   const validateForm = () => {
     const newErrors: Partial<FormData> = {};
     if (!formData.firstName) newErrors.firstName = "First name is required";
@@ -79,6 +84,7 @@ const Checkout: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Handle place order button click
   const handlePlaceOrder = () => {
     if (validateForm()) {
       // Clear the cart
@@ -88,9 +94,9 @@ const Checkout: React.FC = () => {
     }
   };
 
+  // Handle dialog close and redirect to shop page
   const handleCloseDialog = () => {
     setDialogOpen(false);
-    // Redirect to the home page or order confirmation page
     router.push("/shop");
   };
 
@@ -421,6 +427,7 @@ const Checkout: React.FC = () => {
                 </div>
               </div>
               <hr className="my-4" />
+              {/* Payment Method Selection */}
               <h3
                 className="font-bold text-xl flex items-center space-x-2"
                 onClick={() => setPaymentMethod("bank")}
@@ -506,6 +513,7 @@ const Checkout: React.FC = () => {
         </div>
       </div>
 
+      {/* Order Success Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
