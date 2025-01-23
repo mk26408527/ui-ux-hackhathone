@@ -86,7 +86,7 @@ export default function ShoppingCart() {
                     </div>
                     <div className="col-span-12 sm:col-span-2">
                       <span className="text-gray-600">
-                        Rs. {item.price.toLocaleString()}
+                      $ {item.price.toLocaleString()}
                       </span>
                     </div>
                     <div className="col-span-12 sm:col-span-2">
@@ -102,7 +102,7 @@ export default function ShoppingCart() {
                     </div>
                     <div className="col-span-12 sm:col-span-2 flex items-center justify-between">
                       <span className="text-gray-600">
-                        Rs. {(item.price * item.quantity).toLocaleString()}
+                      $ {(item.price * item.quantity).toLocaleString()}
                       </span>
                       <button
                         className="text-gray-400 hover:text-gray-600"
@@ -153,13 +153,13 @@ export default function ShoppingCart() {
                 <div className="flex justify-between items-center">
                   <span className="text-base">Subtotal</span>
                   <span className="text-gray-600">
-                    Rs. {state.total.toLocaleString()}
+                  $ {state.total.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-base font-medium">Total</span>
                   <span className="text-[#B88E2F] text-xl">
-                    Rs. {state.total.toLocaleString()}
+                  $ {state.total.toLocaleString()}
                   </span>
                 </div>
                 {state.items.length > 0 && (

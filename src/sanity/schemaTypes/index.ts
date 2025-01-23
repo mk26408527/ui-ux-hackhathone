@@ -1,8 +1,9 @@
 import product from './product';
+import review from './reviwes';
+import orders from './orders';
 
 import { SchemaTypeDefinition } from 'sanity';
-import review from './reviwes';
 
 export const schema: { types: SchemaTypeDefinition[] } = {
-    types: [product, review] 
+    types: [product, review, orders] 
 };

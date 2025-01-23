@@ -260,7 +260,7 @@ export default function ProductPage() {
                 </div>
               </>
             ) : (
-              <div className="text-2xl text-[#3A3A3A]">${product.price.toLocaleString()}</div>
+              <div className="text-2xl text-[#3A3A3A]">$ {product.price.toLocaleString()}</div>
             )}
           </div>
 

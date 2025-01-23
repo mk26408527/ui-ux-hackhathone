@@ -1,9 +1,9 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Clock, Calendar } from 'lucide-react'
-import mainchai from "/public/mainchai.png"
+import blogbook from "/public/blogbook.png"
 import mainlaptop from "/public/mainlaptop.png"
-import mainpc from "/public/mainpc.png"
+import blog from "/public/blog.png"
 import { Button } from "@/components/ui/button"
 import insta from "/public/insta.png"
 
@@ -11,24 +11,27 @@ export default function MainTwo() {
   const blogs = [
     {
       id: 1,
-      image: mainchai,
+      image: mainlaptop,
       title: "Going all-in with millennial design",
       readTime: "5 min",
-      date: "12th Oct 2022"
+      date: "12th Oct 2022",
+      link: "blog2"
     },
     {
       id: 2,
-      image: mainlaptop, 
-      title: "Going all-in with millennial design",
+      image: blogbook, 
+      title: "Exploring new ways of decorating",
       readTime: "5 min",
-      date: "12th Oct 2022"
+      date: "12th Oct 2022",
+      link: "blog1"
     },
     {
       id: 3,
-      image: mainpc,
-      title: "Going all-in with millennial design", 
+      image: blog,
+      title: "Handmade pieces that took time to make", 
       readTime: "5 min",
-      date: "12th Oct 2022"
+      date: "12th Oct 2022",
+      link: "blog3"
     }
   ]
 
@@ -57,7 +60,7 @@ export default function MainTwo() {
                 <h3 className="text-xl font-semibold mb-4">{blog.title}</h3>
                 <div className="mb-4">
                   <Link 
-                    href={`/blog/${blog.id}`}
+                    href={blog.link}
                     className="text-primary hover:text-primary/90 font-medium"
                   >
                     Read More

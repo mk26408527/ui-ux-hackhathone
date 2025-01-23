@@ -73,3 +73,5 @@ export const fetchSingleProductWithReviews = async (slug: string) => {
     throw error;
   }
 };
+
+

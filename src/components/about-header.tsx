@@ -29,7 +29,7 @@ const recentPosts: BlogPost[] = [
     image: mainlaptop,
     author: "Admin",
     category: "Design",
-    slug: "millennial-design"
+    slug: "blog1"
   },
   {
     title: "Exploring new ways of decorating",
@@ -38,7 +38,7 @@ const recentPosts: BlogPost[] = [
     image: blogbook,
     author: "Admin",
     category: "Interior",
-    slug: "exploring-decorating"
+    slug: "blog2"
   },
   {
     title: "Handmade pieces that took time to make",
@@ -47,7 +47,7 @@ const recentPosts: BlogPost[] = [
     image: blog,
     author: "Admin",
     category: "Handmade",
-    slug: "handmade-pieces"
+    slug: "blog3"
   }
 ]
 
@@ -112,8 +112,8 @@ export default function BlogPost() {
                   <h2 className="mb-4 text-2xl font-semibold tracking-tight">{post.title}</h2>
                   <p className="mb-4 text-muted-foreground">{post.excerpt}</p>
                   <Link
-                    href='https://wordpress.com/discover?selectedTab=firstposts'
-                    className="inline-flex items-center text-sm font-medium text-primary hover:underline" target="_blank"
+                    href={post.slug}
+                    className="inline-flex items-center text-sm font-medium text-primary hover:underline" 
                   >
                     Read more
                     <svg

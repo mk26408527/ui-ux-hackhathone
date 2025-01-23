@@ -145,7 +145,7 @@ const Wishlist = () => {
                           </CardTitle>
                         </Link>
                         <p className="text-2xl font-bold mt-2 text-blue-600">
-                          Rs. {item.price.toLocaleString()}
+                          $ {item.price.toLocaleString()}
                         </p>
                       </CardContent>
                       <CardFooter className="flex justify-between items-center p-4 bg-gray-50">

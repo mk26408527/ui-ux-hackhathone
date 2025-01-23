@@ -54,7 +54,7 @@ export function Cart() {
                   <div className="flex-1">
                     <h3 className="font-medium">{item.name}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Rs. {item.price.toLocaleString()}
+                      $ {item.price.toLocaleString()}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <Button
@@ -89,7 +89,7 @@ export function Cart() {
               <div className="pt-4 space-y-4">
                 <div className="flex justify-between text-lg font-medium">
                   <span>Total</span>
-                  <span>Rs. {state.total.toLocaleString()}</span>
+                  <span>$ {state.total.toLocaleString()}</span>
                 </div>
                 <Button className="w-full" size="lg">
                   Checkout

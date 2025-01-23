@@ -1,12 +1,13 @@
-"use client";
+"use client"
 
-import React, { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import shopheader from "/public/shopheader.png";
-import { useCart } from "@/components/cart-context";
-import { Button } from "@/components/ui/button";
+import type React from "react"
+import { useState } from "react"
+import Image from "next/image"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import shopheader from "/public/shopheader.png"
+import { useCart } from "@/components/cart-context"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -14,29 +15,33 @@ import {
   DialogTitle,
   DialogDescription,
   DialogClose,
-} from "@/components/ui/dialog";
-import { CheckCircle2 } from "lucide-react";
+} from "@/components/ui/dialog"
+import { CheckCircle2 } from "lucide-react"
+import { getStripe } from "@/lib/get-stripe"
+import { client } from "@/sanity/lib/client"
 
 // Define the structure of the form data
 interface FormData {
-  firstName: string;
-  lastName: string;
-  companyName: string;
-  country: string;
-  streetAddress: string;
-  townCity: string;
-  province: string;
-  zipCode: string;
-  phone: string;
-  email: string;
-  additionalInfo: string;
+  firstName: string
+  lastName: string
+  companyName: string
+  country: string
+  streetAddress: string
+  townCity: string
+  province: string
+  zipCode: string
+  phone: string
+  email: string
+  additionalInfo: string
 }
 
 const Checkout: React.FC = () => {
-  const { state, dispatch } = useCart();
-  const [paymentMethod, setPaymentMethod] = useState("bank");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const router = useRouter();
+  const { state, dispatch } = useCart()
+  const [paymentMethod, setPaymentMethod] = useState("stripe")
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const router = useRouter()
 
   // Initialize form data state
   const [formData, setFormData] = useState<FormData>({
@@ -51,66 +56,137 @@ const Checkout: React.FC = () => {
     phone: "",
     email: "",
     additionalInfo: "",
-  });
+  })
 
   // Initialize form errors state
-  const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [errors, setErrors] = useState<Partial<FormData>>({})
 
   // Handle input change and update form data state
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+    // Clear error when user starts typing
+    if (errors[name as keyof FormData]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }))
+    }
+  }
 
   // Validate form data and set errors if any
   const validateForm = () => {
-    const newErrors: Partial<FormData> = {};
-    if (!formData.firstName) newErrors.firstName = "First name is required";
-    if (!formData.lastName) newErrors.lastName = "Last name is required";
-    if (!formData.country) newErrors.country = "Country is required";
-    if (!formData.streetAddress)
-      newErrors.streetAddress = "Street address is required";
-    if (!formData.townCity) newErrors.townCity = "Town/City is required";
-    if (!formData.province) newErrors.province = "Province is required";
-    if (!formData.zipCode) newErrors.zipCode = "ZIP code is required";
-    if (!formData.phone) newErrors.phone = "Phone number is required";
-    if (!formData.email) newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(formData.email))
-      newErrors.email = "Email is invalid";
+    const newErrors: Partial<FormData> = {}
+    if (!formData.firstName) newErrors.firstName = "First name is required"
+    if (!formData.lastName) newErrors.lastName = "Last name is required"
+    if (!formData.country) newErrors.country = "Country is required"
+    if (!formData.streetAddress) newErrors.streetAddress = "Street address is required"
+    if (!formData.townCity) newErrors.townCity = "Town/City is required"
+    if (!formData.province) newErrors.province = "Province is required"
+    if (!formData.zipCode) newErrors.zipCode = "ZIP code is required"
+    if (!formData.phone) newErrors.phone = "Phone number is required"
+    if (!formData.email) newErrors.email = "Email is required"
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid"
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   // Handle place order button click
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
+    setErrorMessage(null)
     if (validateForm()) {
-      // Clear the cart
-      dispatch({ type: "CLEAR_CART" });
-      // Show the success dialog
-      setDialogOpen(true);
+      setIsLoading(true)
+      try {
+        // Create order in Sanity
+        const order = {
+          _type: "order",
+          orderNumber: `ORD-${Date.now()}`,
+          customer: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+          },
+          shippingAddress: {
+            streetAddress: formData.streetAddress,
+            townCity: formData.townCity,
+            province: formData.province,
+            zipCode: formData.zipCode,
+            country: formData.country,
+          },
+          items: state.items.map((item) => ({
+            _key: `${item.id}-${Date.now()}`, // Add a unique key
+            productId: item.id,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          total: state.total,
+          paymentMethod: paymentMethod,
+          createdAt: new Date().toISOString(),
+        }
+
+        await client.create(order)
+
+        if (paymentMethod === "stripe") {
+          const response = await fetch("/api/checkout", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              items: state.items,
+            }),
+          })
+
+          const data = await response.json()
+
+          if (!response.ok) {
+            throw new Error(data.error || `HTTP error! status: ${response.status}`)
+          }
+
+          if (data.error) {
+            throw new Error(data.error)
+          }
+
+          const { sessionId } = data
+
+          console.log("Attempting to initialize Stripe...")
+          const stripe = await getStripe()
+
+          if (!stripe) {
+            throw new Error("Failed to initialize Stripe. Please check your configuration.")
+          }
+
+          console.log("Redirecting to Stripe checkout...")
+          const { error } = await stripe.redirectToCheckout({ sessionId })
+
+          if (error) {
+            throw error
+          }
+        } else {
+          // Handle other payment methods (e.g., COD)
+          dispatch({ type: "CLEAR_CART" })
+          setDialogOpen(true)
+        }
+      } catch (error) {
+        console.error("Order error:", error)
+        setErrorMessage(`Order failed: ${error instanceof Error ? error.message : "Unknown error occurred"}`)
+      } finally {
+        setIsLoading(false)
+      }
     }
-  };
+  }
 
   // Handle dialog close and redirect to shop page
   const handleCloseDialog = () => {
-    setDialogOpen(false);
-    router.push("/shop");
-  };
+    setDialogOpen(false)
+    router.push("/shop")
+  }
 
   return (
     <div>
       {/* Hero Section with Background */}
       <div className="relative h-[300px] w-full">
-        <Image
-          src={shopheader}
-          alt="Shop Header"
-          fill
-          className="object-cover"
-          priority
-        />
+        <Image src={shopheader || "/placeholder.svg"} alt="Shop Header" fill className="object-cover" priority />
         <div className="absolute inset-0 bg-black/20" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           {/* Logo */}
@@ -139,10 +215,7 @@ const Checkout: React.FC = () => {
               <form className="space-y-4">
                 {/* First Name */}
                 <div>
-                  <label
-                    className="block text-lg font-semibold"
-                    htmlFor="firstName"
-                  >
+                  <label className="block text-lg font-semibold" htmlFor="firstName">
                     First Name
                   </label>
                   <input
@@ -156,18 +229,11 @@ const Checkout: React.FC = () => {
                       errors.firstName ? "border-red-500" : "border-gray-300"
                     } rounded-md`}
                   />
-                  {errors.firstName && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.firstName}
-                    </p>
-                  )}
+                  {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
                 </div>
                 {/* Last Name */}
                 <div>
-                  <label
-                    className="block text-lg font-semibold"
-                    htmlFor="lastName"
-                  >
+                  <label className="block text-lg font-semibold" htmlFor="lastName">
                     Last Name
                   </label>
                   <input
@@ -177,22 +243,13 @@ const Checkout: React.FC = () => {
                     value={formData.lastName}
                     onChange={handleInputChange}
                     placeholder="Enter your last name"
-                    className={`w-full p-3 border ${
-                      errors.lastName ? "border-red-500" : "border-gray-300"
-                    } rounded-md`}
+                    className={`w-full p-3 border ${errors.lastName ? "border-red-500" : "border-gray-300"} rounded-md`}
                   />
-                  {errors.lastName && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.lastName}
-                    </p>
-                  )}
+                  {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
                 </div>
                 {/* Company Name */}
                 <div>
-                  <label
-                    className="block text-lg font-semibold"
-                    htmlFor="companyName"
-                  >
+                  <label className="block text-lg font-semibold" htmlFor="companyName">
                     Company Name (optional)
                   </label>
                   <input
@@ -207,10 +264,7 @@ const Checkout: React.FC = () => {
                 </div>
                 {/* Country/Region */}
                 <div>
-                  <label
-                    className="block text-lg font-semibold"
-                    htmlFor="country"
-                  >
+                  <label className="block text-lg font-semibold" htmlFor="country">
                     Country/Region
                   </label>
                   <input
@@ -220,22 +274,13 @@ const Checkout: React.FC = () => {
                     value={formData.country}
                     onChange={handleInputChange}
                     placeholder="Enter your country"
-                    className={`w-full p-3 border ${
-                      errors.country ? "border-red-500" : "border-gray-300"
-                    } rounded-md`}
+                    className={`w-full p-3 border ${errors.country ? "border-red-500" : "border-gray-300"} rounded-md`}
                   />
-                  {errors.country && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.country}
-                    </p>
-                  )}
+                  {errors.country && <p className="text-red-500 text-sm mt-1">{errors.country}</p>}
                 </div>
                 {/* Street Address */}
                 <div>
-                  <label
-                    className="block text-lg font-semibold"
-                    htmlFor="streetAddress"
-                  >
+                  <label className="block text-lg font-semibold" htmlFor="streetAddress">
                     Street Address
                   </label>
                   <input
@@ -246,23 +291,14 @@ const Checkout: React.FC = () => {
                     onChange={handleInputChange}
                     placeholder="Enter your street address"
                     className={`w-full p-3 border ${
-                      errors.streetAddress
-                        ? "border-red-500"
-                        : "border-gray-300"
+                      errors.streetAddress ? "border-red-500" : "border-gray-300"
                     } rounded-md`}
                   />
-                  {errors.streetAddress && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.streetAddress}
-                    </p>
-                  )}
+                  {errors.streetAddress && <p className="text-red-500 text-sm mt-1">{errors.streetAddress}</p>}
                 </div>
                 {/* Town/City */}
                 <div>
-                  <label
-                    className="block text-lg font-semibold"
-                    htmlFor="townCity"
-                  >
+                  <label className="block text-lg font-semibold" htmlFor="townCity">
                     Town/City
                   </label>
                   <input
@@ -272,22 +308,13 @@ const Checkout: React.FC = () => {
                     value={formData.townCity}
                     onChange={handleInputChange}
                     placeholder="Enter your town or city"
-                    className={`w-full p-3 border ${
-                      errors.townCity ? "border-red-500" : "border-gray-300"
-                    } rounded-md`}
+                    className={`w-full p-3 border ${errors.townCity ? "border-red-500" : "border-gray-300"} rounded-md`}
                   />
-                  {errors.townCity && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.townCity}
-                    </p>
-                  )}
+                  {errors.townCity && <p className="text-red-500 text-sm mt-1">{errors.townCity}</p>}
                 </div>
                 {/* Province */}
                 <div>
-                  <label
-                    className="block text-lg font-semibold"
-                    htmlFor="province"
-                  >
+                  <label className="block text-lg font-semibold" htmlFor="province">
                     Province
                   </label>
                   <input
@@ -297,22 +324,13 @@ const Checkout: React.FC = () => {
                     value={formData.province}
                     onChange={handleInputChange}
                     placeholder="Enter your province"
-                    className={`w-full p-3 border ${
-                      errors.province ? "border-red-500" : "border-gray-300"
-                    } rounded-md`}
+                    className={`w-full p-3 border ${errors.province ? "border-red-500" : "border-gray-300"} rounded-md`}
                   />
-                  {errors.province && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.province}
-                    </p>
-                  )}
+                  {errors.province && <p className="text-red-500 text-sm mt-1">{errors.province}</p>}
                 </div>
                 {/* ZIP Code */}
                 <div>
-                  <label
-                    className="block text-lg font-semibold"
-                    htmlFor="zipCode"
-                  >
+                  <label className="block text-lg font-semibold" htmlFor="zipCode">
                     ZIP Code
                   </label>
                   <input
@@ -322,22 +340,13 @@ const Checkout: React.FC = () => {
                     value={formData.zipCode}
                     onChange={handleInputChange}
                     placeholder="Enter your ZIP code"
-                    className={`w-full p-3 border ${
-                      errors.zipCode ? "border-red-500" : "border-gray-300"
-                    } rounded-md`}
+                    className={`w-full p-3 border ${errors.zipCode ? "border-red-500" : "border-gray-300"} rounded-md`}
                   />
-                  {errors.zipCode && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.zipCode}
-                    </p>
-                  )}
+                  {errors.zipCode && <p className="text-red-500 text-sm mt-1">{errors.zipCode}</p>}
                 </div>
                 {/* Phone */}
                 <div>
-                  <label
-                    className="block text-lg font-semibold"
-                    htmlFor="phone"
-                  >
+                  <label className="block text-lg font-semibold" htmlFor="phone">
                     Phone
                   </label>
                   <input
@@ -347,20 +356,13 @@ const Checkout: React.FC = () => {
                     value={formData.phone}
                     onChange={handleInputChange}
                     placeholder="Enter your phone number"
-                    className={`w-full p-3 border ${
-                      errors.phone ? "border-red-500" : "border-gray-300"
-                    } rounded-md`}
+                    className={`w-full p-3 border ${errors.phone ? "border-red-500" : "border-gray-300"} rounded-md`}
                   />
-                  {errors.phone && (
-                    <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
-                  )}
+                  {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
                 </div>
                 {/* Email */}
                 <div>
-                  <label
-                    className="block text-lg font-semibold"
-                    htmlFor="email"
-                  >
+                  <label className="block text-lg font-semibold" htmlFor="email">
                     Email
                   </label>
                   <input
@@ -370,20 +372,13 @@ const Checkout: React.FC = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="Enter your email"
-                    className={`w-full p-3 border ${
-                      errors.email ? "border-red-500" : "border-gray-300"
-                    } rounded-md`}
+                    className={`w-full p-3 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md`}
                   />
-                  {errors.email && (
-                    <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-                  )}
+                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                 </div>
                 {/* Additional Information */}
                 <div>
-                  <label
-                    className="block text-lg font-semibold"
-                    htmlFor="additionalInfo"
-                  >
+                  <label className="block text-lg font-semibold" htmlFor="additionalInfo">
                     Additional Information
                   </label>
                   <textarea
@@ -410,80 +405,56 @@ const Checkout: React.FC = () => {
                     <span>
                       {item.name} x{item.quantity}
                     </span>
-                    <span>
-                      Rs. {(item.price * item.quantity).toLocaleString()}
-                    </span>
+                    <span>$ {(item.price * item.quantity).toLocaleString()}</span>
                   </div>
                 ))}
                 {/* Subtotal */}
                 <div className="flex justify-between font-semibold">
                   <span>Subtotal</span>
-                  <span>Rs. {state.total.toLocaleString()}</span>
+                  <span>$ {state.total.toLocaleString()}</span>
                 </div>
                 {/* Total */}
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
-                  <span>Rs. {state.total.toLocaleString()}</span>
+                  <span>$ {state.total.toLocaleString()}</span>
                 </div>
               </div>
               <hr className="my-4" />
               {/* Payment Method Selection */}
-              <h3
-                className="font-bold text-xl flex items-center space-x-2"
-                onClick={() => setPaymentMethod("bank")}
-              >
+              <h3 className="font-bold text-xl flex items-center space-x-2" onClick={() => setPaymentMethod("stripe")}>
                 <span
                   className={`w-3 h-3 ${
-                    paymentMethod === "bank"
-                      ? "bg-black"
-                      : "border-2 border-black"
+                    paymentMethod === "stripe" ? "bg-black" : "border-2 border-black"
                   } rounded-full`}
                 ></span>
-                <span>Direct Bank Transfer</span>
+                <span>Pay with Stripe</span>
               </h3>
               <p className="text-sm mt-2">
-                Make your payment directly into our bank account. Please use
-                your Order ID as the payment reference. Your order will not be
-                shipped until your funds shift onto our account.
+                Secure payment using Stripe. Your payment information is encrypted and secure.
               </p>
-              <h3
-                className="font-bold text-xl flex items-center space-x-2 mt-4"
-                onClick={() => setPaymentMethod("direct")}
-              >
-                <span
-                  className={`w-3 h-3 ${
-                    paymentMethod === "direct"
-                      ? "bg-black"
-                      : "border-2 border-black"
-                  } rounded-full`}
-                ></span>
-                <span>Direct Bank Transfer</span>
-              </h3>
               <h3
                 className="font-bold text-xl flex items-center space-x-2 mt-4"
                 onClick={() => setPaymentMethod("cod")}
               >
                 <span
-                  className={`w-3 h-3 ${
-                    paymentMethod === "cod"
-                      ? "bg-black"
-                      : "border-2 border-black"
-                  } rounded-full`}
+                  className={`w-3 h-3 ${paymentMethod === "cod" ? "bg-black" : "border-2 border-black"} rounded-full`}
                 ></span>
                 <span>Cash on Delivery</span>
               </h3>
-              <p className="text-sm mt-2">
-                Your personal data will be used to support your experience
-                throughout this website, to manage access to your account, and
-                for other purposes described in our privacy policy.
+              <p className="text-sm mt-2">Pay with cash upon delivery. Available for selected areas only.</p>
+              <p className="text-sm mt-4">
+                Your personal data will be used to process your order, support your experience throughout this website,
+                and for other purposes described in our privacy policy.
               </p>
               {/* Place Order Button */}
               <Button
                 className="w-full py-2 bg-transparent border border-black rounded-md text-black text-lg hover:bg-black hover:text-white transition"
                 onClick={handlePlaceOrder}
+                disabled={isLoading}
               >
-                Place Order
+                {isLoading ? "Processing..." : "Place Order"}
               </Button>
+              {errorMessage && <p className="text-red-500 text-sm mt-2">{errorMessage}</p>}
             </div>
           </div>
         </div>
@@ -494,21 +465,15 @@ const Checkout: React.FC = () => {
         <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-2">
             <h3 className="text-lg font-medium">Free Delivery</h3>
-            <p className="text-sm text-muted-foreground">
-              For all orders over $50, enjoy free delivery.
-            </p>
+            <p className="text-sm text-muted-foreground">For all orders over $50, enjoy free delivery.</p>
           </div>
           <div className="space-y-2">
             <h3 className="text-lg font-medium">90 Days Return</h3>
-            <p className="text-sm text-muted-foreground">
-              If goods have problems, you can return them within 90 days.
-            </p>
+            <p className="text-sm text-muted-foreground">If goods have problems, you can return them within 90 days.</p>
           </div>
           <div className="space-y-2">
             <h3 className="text-lg font-medium">Secure Payment</h3>
-            <p className="text-sm text-muted-foreground">
-              100% secure payment guaranteed.
-            </p>
+            <p className="text-sm text-muted-foreground">100% secure payment guaranteed.</p>
           </div>
         </div>
       </div>
@@ -522,8 +487,7 @@ const Checkout: React.FC = () => {
               Order Placed Successfully
             </DialogTitle>
             <DialogDescription>
-              Your order has been placed successfully. Thank you for shopping
-              with us!
+              Your order has been placed successfully. Thank you for shopping with us!
             </DialogDescription>
           </DialogHeader>
           <DialogClose asChild>
@@ -534,7 +498,8 @@ const Checkout: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
-  );
-};
+  )
+}
 
-export default Checkout;
+export default Checkout
+

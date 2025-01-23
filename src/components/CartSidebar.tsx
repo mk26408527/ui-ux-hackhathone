@@ -45,7 +45,7 @@ export default function CartSidebar() {
               <div className="flex-grow">
                 <h3 className="text-sm font-medium">{item.name}</h3>
                 <p className="text-sm text-gray-500">
-                  Rs. {item.price.toLocaleString()}
+                  $ {item.price.toLocaleString()}
                 </p>
                 <div className="flex items-center mt-2">
                   <Input
@@ -84,7 +84,7 @@ export default function CartSidebar() {
           <div className="flex justify-between items-center mb-4">
             <span className="text-base font-medium">Subtotal</span>
             <span className="text-lg font-bold">
-              Rs. {state.total.toLocaleString()}
+              $ {state.total.toLocaleString()}
             </span>
           </div>
           <Link href="/cart">
