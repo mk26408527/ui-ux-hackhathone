@@ -144,7 +144,7 @@ const Wishlist = () => {
                             {item.name}
                           </CardTitle>
                         </Link>
-                        <p className="text-2xl font-bold mt-2 text-blue-600">
+                        <p className="text-2xl font-bold mt-2 text-black">
                           $ {item.price.toLocaleString()}
                         </p>
                       </CardContent>

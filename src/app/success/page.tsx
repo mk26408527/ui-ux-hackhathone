@@ -20,8 +20,8 @@ export default function SuccessPage() {
         <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-4">Payment Successful!</h1>
         <p className="text-gray-600 mb-8">Thank you for your purchase. Your order has been confirmed.</p>
-        <Button onClick={() => router.push("/shop")} className="w-full">
-          Continue Shopping
+        <Button onClick={() => router.push("/shipping")} className="w-full">
+          Track Order
         </Button>
       </div>
     </div>

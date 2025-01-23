@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import shopheader from "/public/shopheader.png"
 
 interface Product {
@@ -33,6 +35,14 @@ interface Product {
   stockLevel: number
 }
 
+interface FilterState {
+  priceRange: [number, number]
+  categories: string[]
+  brands: string[]
+  colors: string[]
+  sizes: string[]
+}
+
 export default function ShopPage() {
   const { dispatch: cartDispatch } = useCart()
   const { state: wishlistState, dispatch: wishlistDispatch } = useWishlist()
@@ -41,9 +51,15 @@ export default function ShopPage() {
   const [error, setError] = useState<string | null>(null)
   const [view, setView] = useState<"grid" | "list">("grid")
   const [sort, setSort] = useState<string>("default")
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000])
-  const [maxPrice, setMaxPrice] = useState<number>(10000)
   const [searchQuery, setSearchQuery] = useState("")
+  const [filters, setFilters] = useState<FilterState>({
+    priceRange: [0, 10000],
+    categories: [],
+    brands: [],
+    colors: [],
+    sizes: [],
+  })
+  const [maxPrice, setMaxPrice] = useState<number>(10000)
 
   useEffect(() => {
     async function fetchProducts() {
@@ -54,7 +70,7 @@ export default function ShopPage() {
         setProducts(data || [])
         const highestPrice = Math.max(...data.map((product) => product.price))
         setMaxPrice(highestPrice)
-        setPriceRange([0, highestPrice])
+        setFilters((prev) => ({ ...prev, priceRange: [0, highestPrice] }))
       } catch (error) {
         console.error("Error fetching products:", error)
         setError("Failed to fetch products. Please try again later.")
@@ -70,7 +86,11 @@ export default function ShopPage() {
     return products
       .filter((product) => {
         if (searchQuery && !product.title.toLowerCase().includes(searchQuery.toLowerCase())) return false
-        if (product.price < priceRange[0] || product.price > priceRange[1]) return false
+        if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) return false
+        if (filters.categories.length > 0 && !filters.categories.includes(product.category)) return false
+        if (filters.brands.length > 0 && !filters.brands.includes(product.brand)) return false
+        if (filters.colors.length > 0 && !filters.colors.includes(product.color)) return false
+        if (filters.sizes.length > 0 && !filters.sizes.includes(product.size)) return false
         return true
       })
       .sort((a, b) => {
@@ -87,7 +107,7 @@ export default function ShopPage() {
             return 0
         }
       })
-  }, [products, searchQuery, priceRange, sort])
+  }, [products, searchQuery, filters, sort])
 
   const filteredProducts = useMemo(() => filterAndSortProducts(), [filterAndSortProducts])
 
@@ -99,12 +119,12 @@ export default function ShopPage() {
     setSort(value)
   }, [])
 
-  const handlePriceRangeChange = useCallback((value: number[]) => {
-    setPriceRange(value as [number, number])
-  }, [])
-
   const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value)
+  }, [])
+
+  const handleFilterChange = useCallback((newFilters: Partial<FilterState>) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }))
   }, [])
 
   const addToCart = useCallback(
@@ -209,14 +229,33 @@ export default function ShopPage() {
                       min={0}
                       max={maxPrice}
                       step={100}
-                      value={priceRange}
-                      onValueChange={handlePriceRangeChange}
+                      value={filters.priceRange}
+                      onValueChange={(value) => handleFilterChange({ priceRange: value as [number, number] })}
                     />
                     <div className="mt-2 flex justify-between text-sm text-gray-500">
-                      <span>Rs. {priceRange[0]}</span>
-                      <span>Rs. {priceRange[1]}</span>
+                      <span>$ {filters.priceRange[0]}</span>
+                      <span>$ {filters.priceRange[1]}</span>
                     </div>
                   </div>
+                  <div>
+                    <h3 className="mb-2 text-lg font-semibold">Categories</h3>
+                    {Array.from(new Set(products.map((p) => p.category))).map((category) => (
+                      <div key={category} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`category-${category}`}
+                          checked={filters.categories.includes(category)}
+                          onCheckedChange={(checked) => {
+                            const newCategories = checked
+                              ? [...filters.categories, category]
+                              : filters.categories.filter((c) => c !== category)
+                            handleFilterChange({ categories: newCategories })
+                          }}
+                        />
+                        <Label htmlFor={`category-${category}`}>{category}</Label>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Add similar sections for brands, colors, and sizes */}
                 </div>
               </SheetContent>
             </Sheet>
@@ -275,7 +314,7 @@ export default function ShopPage() {
               key={product._id}
               className={`group relative overflow-hidden transition-all duration-500 hover:shadow-2xl ${
                 view === "list" ? "flex flex-row items-center" : ""
-              } border-none shadow-none`} // Removed border and shadow
+              } border-none shadow-none`}
             >
               <CardHeader className={`p-0 ${view === "list" ? "w-1/3" : ""}`}>
                 <div className="aspect-square relative overflow-hidden">
@@ -375,3 +414,4 @@ export default function ShopPage() {
     </div>
   )
 }
+

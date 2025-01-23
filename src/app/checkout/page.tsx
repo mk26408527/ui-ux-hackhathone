@@ -179,7 +179,7 @@ const Checkout: React.FC = () => {
   // Handle dialog close and redirect to shop page
   const handleCloseDialog = () => {
     setDialogOpen(false)
-    router.push("/shop")
+    router.push("/shipping")
   }
 
   return (
@@ -492,7 +492,7 @@ const Checkout: React.FC = () => {
           </DialogHeader>
           <DialogClose asChild>
             <Button onClick={handleCloseDialog} className="w-full">
-              Close
+              Track Order
             </Button>
           </DialogClose>
         </DialogContent>
