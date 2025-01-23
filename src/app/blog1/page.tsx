@@ -101,7 +101,7 @@ export default function Blog1() {
               type="submit"
               className="w-full bg-primary text-white hover:bg-primary/90 transition-colors duration-300 rounded-lg shadow-md"
             >
-              Submit Comment
+            Comment
             </Button>
           </div>
         </form>
