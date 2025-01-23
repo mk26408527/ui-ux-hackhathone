@@ -2,16 +2,18 @@ import { NextResponse } from "next/server"
 import Stripe from "stripe"
 import type { CartItem } from "@/app/types/checkout"
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("Missing Stripe secret key")
-}
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2024-12-18.acacia" as const, // Updated to the latest stable version
-})
-
+// Remove initialization from top level
 export async function POST(req: Request) {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json({ error: "Stripe is not configured" }, { status: 500 })
+  }
+
   try {
+    // Initialize Stripe inside the handler
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2024-12-18.acacia" as const,
+    })
+
     const body = await req.json()
     const { items } = body as { items: CartItem[] }
 
@@ -28,7 +30,7 @@ export async function POST(req: Request) {
             name: item.name,
             images: [item.image],
           },
-          unit_amount: Math.round(item.price * 100), // Convert to cents
+          unit_amount: Math.round(item.price * 100),
         },
         quantity: item.quantity,
       })),
