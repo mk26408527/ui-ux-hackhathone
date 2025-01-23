@@ -2,8 +2,12 @@ import { NextResponse } from "next/server"
 import Stripe from "stripe"
 import type { CartItem } from "@/app/types/checkout"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia",
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("Missing Stripe secret key")
+}
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2024-12-18.acacia" as const, // Updated to the latest stable version
 })
 
 export async function POST(req: Request) {
@@ -13,10 +17,6 @@ export async function POST(req: Request) {
 
     if (!items?.length) {
       return NextResponse.json({ error: "No items provided" }, { status: 400 })
-    }
-
-    if (!process.env.STRIPE_SECRET_KEY) {
-      throw new Error("Missing Stripe secret key")
     }
 
     const session = await stripe.checkout.sessions.create({
