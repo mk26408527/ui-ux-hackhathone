@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import shopheader from "/public/shopheader.png"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Product {
   _id: string
@@ -168,7 +169,26 @@ export default function ShopPage() {
   )
 
   if (isLoading) {
-    return <div className="container mx-auto px-4 py-8 text-center">Loading products...</div>
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+          {[...Array(8)].map((_, index) => (
+            <Card key={index} className="overflow-hidden">
+              <CardHeader className="p-0">
+                <Skeleton className="h-48 w-full" />
+              </CardHeader>
+              <CardContent className="pt-4">
+                <Skeleton className="h-4 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardContent>
+              <CardFooter>
+                <Skeleton className="h-6 w-1/3" />
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   if (error) {

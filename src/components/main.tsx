@@ -1,45 +1,69 @@
-"use client";
+"use client"
 
-import { ArrowRight } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import mainsofy from "/public/mainsofy.png";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useEffect, useState } from "react";
-import { fetchProductData } from "@/sanity/lib/fetchData";
+import { ArrowRight } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
+import mainsofy from "/public/mainsofy.png"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from "react"
+import { fetchProductData } from "@/sanity/lib/fetchData"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Product {
-  _id: string;
-  title: string;
-  slug: string; 
-  price: number;
-  image: string;
-  category: string;
-  discountPercentage: number;
-  isFeaturedProduct: boolean;
+  _id: string
+  title: string
+  slug: string
+  price: number
+  image: string
+  category: string
+  discountPercentage: number
+  isFeaturedProduct: boolean
 }
 
 export default function ProductShowcase() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await fetchProductData();
-        setProducts(data.slice(8, 12)); // Take products 8-12
+        const data = await fetchProductData()
+        setProducts(data.slice(8, 12)) // Take products 8-12
       } catch (error) {
-        console.error("Error loading products:", error);
+        console.error("Error loading products:", error)
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
     }
-    loadProducts();
-  }, []);
+    loadProducts()
+  }, [])
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="text-center mb-10">
+          <Skeleton className="h-8 w-64 mx-auto mb-4" />
+          <Skeleton className="h-4 w-full max-w-md mx-auto" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, index) => (
+            <Card key={index} className="border-none shadow-none">
+              <CardHeader className="p-0">
+                <Skeleton className="h-64 w-full" />
+              </CardHeader>
+              <CardContent className="pt-4">
+                <Skeleton className="h-4 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardContent>
+              <CardFooter>
+                <Skeleton className="h-6 w-1/3" />
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -121,5 +145,6 @@ export default function ProductShowcase() {
         </div>
       </div>
     </>
-  );
+  )
 }
+
