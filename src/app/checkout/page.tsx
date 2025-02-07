@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/dialog"
 import { CheckCircle2 } from "lucide-react"
 import { getStripe } from "@/lib/get-stripe"
-import { client } from "@/sanity/lib/client"
 
 // Define the structure of the form data
 interface FormData {
@@ -95,9 +94,8 @@ const Checkout: React.FC = () => {
     if (validateForm()) {
       setIsLoading(true)
       try {
-        // Create order in Sanity
+        // Create order object (but don't save to Sanity)
         const order = {
-          _type: "order",
           orderNumber: `ORD-${Date.now()}`,
           customer: {
             firstName: formData.firstName,
@@ -113,7 +111,6 @@ const Checkout: React.FC = () => {
             country: formData.country,
           },
           items: state.items.map((item) => ({
-            _key: `${item.id}-${Date.now()}`, // Add a unique key
             productId: item.id,
             name: item.name,
             quantity: item.quantity,
@@ -123,8 +120,6 @@ const Checkout: React.FC = () => {
           paymentMethod: paymentMethod,
           createdAt: new Date().toISOString(),
         }
-
-        await client.create(order)
 
         if (paymentMethod === "stripe") {
           const response = await fetch("/api/checkout", {
@@ -163,7 +158,9 @@ const Checkout: React.FC = () => {
             throw error
           }
         } else {
-          // Handle other payment methods (e.g., COD)
+          // Handle COD (Cash on Delivery)
+          // Store order locally or send to a different backend
+          localStorage.setItem("lastOrder", JSON.stringify(order))
           dispatch({ type: "CLEAR_CART" })
           setDialogOpen(true)
         }

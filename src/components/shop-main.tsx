@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import type React from "react"
@@ -19,6 +20,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import shopheader from "/public/shopheader.png"
 import { Skeleton } from "@/components/ui/skeleton"
+
+// Remove the client import as we won't be updating Sanity directly
+// import { client } from "@/sanity/lib/client"
 
 interface Product {
   _id: string
@@ -67,9 +71,9 @@ export default function ShopPage() {
       setIsLoading(true)
       setError(null)
       try {
-        const data = (await fetchProductData()) as Product[]
+        const data = await fetchProductData()
         setProducts(data || [])
-        const highestPrice = Math.max(...data.map((product) => product.price))
+        const highestPrice = Math.max(...data.map((product: { price: any }) => product.price))
         setMaxPrice(highestPrice)
         setFilters((prev) => ({ ...prev, priceRange: [0, highestPrice] }))
       } catch (error) {
@@ -130,6 +134,12 @@ export default function ShopPage() {
 
   const addToCart = useCallback(
     (product: Product) => {
+      if (product.stockLevel <= 0) {
+        toast.error("This product is out of stock")
+        return
+      }
+
+      // Remove the Sanity update
       cartDispatch({
         type: "ADD_TO_CART",
         payload: {
@@ -140,7 +150,17 @@ export default function ShopPage() {
           quantity: 1,
         },
       })
+
+      // Update local state to reflect stock change
+      setProducts((prevProducts) =>
+        prevProducts.map((p) => (p._id === product._id ? { ...p, stockLevel: p.stockLevel - 1 } : p)),
+      )
+
       toast.success("Added to cart!")
+
+      if (product.stockLevel === 1) {
+        toast.warn("This item is now out of stock")
+      }
     },
     [cartDispatch],
   )
@@ -364,9 +384,10 @@ export default function ShopPage() {
                         className="w-full bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm
                                  transition-all duration-300 hover:scale-105 hover:shadow-lg"
                         onClick={() => addToCart(product)}
+                        disabled={product.stockLevel <= 0}
                       >
                         <ShoppingCart className="mr-2 h-4 w-4" />
-                        Add to Cart
+                        {product.stockLevel > 0 ? "Add to Cart" : "Out of Stock"}
                       </Button>
                       <div className="flex justify-center gap-4">
                         <Link href={`/shop/${product.slug}`}>
@@ -410,7 +431,9 @@ export default function ShopPage() {
                 <p className="mt-2 text-sm text-gray-500 line-clamp-2 group-hover:text-gray-700 transition-colors duration-300">
                   {product.category}
                 </p>
-                <p className="mt-1 text-sm text-gray-500">Stock: {product.stockLevel}</p>
+                <p className="mt-1 text-sm text-gray-500">
+                  Stock: {product.stockLevel > 0 ? product.stockLevel : "Out of Stock"}
+                </p>
               </CardContent>
               <CardFooter className={view === "list" ? "justify-end" : ""}>
                 <div className="flex items-center gap-2">

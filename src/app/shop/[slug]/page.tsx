@@ -1,128 +1,148 @@
 /* eslint-disable react/no-unescaped-entities */
-'use client';
+"use client"
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { Button } from "@/components/ui/button";
-import { Facebook, Linkedin, Twitter, Heart, Minus, Plus, Star } from 'lucide-react';
-import { useCart } from '@/components/cart-context';
-import { useWishlist } from '@/components/wishlist-context';
-import { toast } from 'react-toastify';
-import { urlFor } from '@/sanity/lib/image';
-import { fetchSingleProductWithReviews } from '@/sanity/lib/fetchData';
-import { useParams } from 'next/navigation';
-import { client } from "@/sanity/lib/client";
-
+import { useState, useEffect } from "react"
+import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Facebook, Linkedin, Twitter, Heart, Minus, Plus, Star } from "lucide-react"
+import { useCart } from "@/components/cart-context"
+import { useWishlist } from "@/components/wishlist-context"
+import { toast } from "react-toastify"
+import { urlFor } from "@/sanity/lib/image"
+import { fetchSingleProductWithReviews } from "@/sanity/lib/fetchData"
+import { useParams } from "next/navigation"
+import { client } from "@/sanity/lib/client"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Product {
-  _id: string;
-  title: string;
-  slug: string;
-  price: number;
-  description: string;
-  image: string;
-  discountPercentage: number;
-  reviews: Review[];
-  category: string;
+  _id: string
+  title: string
+  slug: string
+  price: number
+  description: string
+  image: string
+  discountPercentage: number
+  reviews: Review[]
+  category: string
+  stockLevel: number
 }
 
 interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice: number;
-  discountPercentage: number;
-  image: string;
-  quantity: number;
+  id: string
+  name: string
+  price: number
+  originalPrice: number
+  discountPercentage: number
+  image: string
+  quantity: number
 }
 
 interface Review {
-  _id: string;
-  text: string;
-  userName: string;
-  createdAt: string;
+  _id: string
+  text: string
+  userName: string
+  createdAt: string
 }
 
 export default function ProductPage() {
-  const params = useParams<{ slug: string }>();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  const { dispatch: cartDispatch } = useCart();
-  const { state: wishlistState, dispatch: wishlistDispatch } = useWishlist();
-  const [isInWishlist, setIsInWishlist] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(0);
-  const [activeTab, setActiveTab] = useState("description");
-  const [newReview, setNewReview] = useState("");
-  const [userName, setUserName] = useState("");
-  const [editingReview, setEditingReview] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
+  const params = useParams<{ slug: string }>()
+  const [product, setProduct] = useState<Product | null>(null)
+  const [quantity, setQuantity] = useState(1)
+  const { dispatch: cartDispatch } = useCart()
+  const { state: wishlistState, dispatch: wishlistDispatch } = useWishlist()
+  const [isInWishlist, setIsInWishlist] = useState(false)
+  const [selectedImage, setSelectedImage] = useState(0)
+  const [activeTab, setActiveTab] = useState("description")
+  const [newReview, setNewReview] = useState("")
+  const [userName, setUserName] = useState("")
+  const [editingReview, setEditingReview] = useState<string | null>(null)
+  const [editText, setEditText] = useState("")
 
   useEffect(() => {
-    if (!params.slug) return;
+    if (!params.slug) return
 
     async function fetchProduct() {
       try {
-        const productData = await fetchSingleProductWithReviews(params.slug);
-        setProduct(productData);
-        setIsInWishlist(wishlistState.items.some(item => item.id === productData._id));
+        const productData = await fetchSingleProductWithReviews(params.slug)
+        setProduct(productData)
+        setIsInWishlist(wishlistState.items.some((item) => item.id === productData._id))
       } catch (error) {
-        console.error('Error fetching product:', error);
-        toast.error('Failed to load product details.');
+        console.error("Error fetching product:", error)
+        toast.error("Failed to load product details.")
       }
     }
 
-    fetchProduct();
-  }, [params.slug, wishlistState.items]);
+    fetchProduct()
+  }, [params.slug, wishlistState.items])
 
   const updateQuantity = (value: number) => {
-    if (value < 1) return;
-    setQuantity(value);
-  };
+    if (value < 1) return
+    setQuantity(value)
+  }
 
-  const addToCart = () => {
-    if (!product) return;
+  const addToCart = async () => {
+    if (!product) return
 
-    const discountedPrice = product.discountPercentage > 0
-      ? (product.price * (100 - product.discountPercentage)) / 100
-      : product.price;
-      
-    const cartItem: CartItem = {
-      id: product._id,
-      name: product.title,
-      price: discountedPrice,
-      originalPrice: product.price,
-      discountPercentage: product.discountPercentage,
-      image: product.image,
-      quantity,
-    };
+    if (product.stockLevel <= 0) {
+      toast.error("This product is out of stock")
+      return
+    }
 
-    cartDispatch({ type: 'ADD_TO_CART', payload: cartItem });
-    toast.success('Product added to cart!');
-  };
-  
+    const updatedProduct = { ...product, stockLevel: product.stockLevel - quantity }
+
+    try {
+      await client.patch(product._id).set({ stockLevel: updatedProduct.stockLevel }).commit()
+
+      const discountedPrice =
+        product.discountPercentage > 0 ? (product.price * (100 - product.discountPercentage)) / 100 : product.price
+
+      const cartItem: CartItem = {
+        id: updatedProduct._id,
+        name: updatedProduct.title,
+        price: discountedPrice,
+        originalPrice: updatedProduct.price,
+        discountPercentage: updatedProduct.discountPercentage,
+        image: updatedProduct.image,
+        quantity,
+      }
+
+      cartDispatch({ type: "ADD_TO_CART", payload: cartItem })
+      setProduct(updatedProduct)
+
+      toast.success(`${quantity} ${quantity > 1 ? "items" : "item"} added to cart!`)
+
+      if (updatedProduct.stockLevel === 0) {
+        toast.warn("This item is now out of stock")
+      }
+    } catch (error) {
+      console.error("Error updating stock level:", error)
+      toast.error("Failed to update stock level. Please try again.")
+    }
+  }
+
   const toggleWishlist = () => {
-    if (!product) return;
+    if (!product) return
 
     if (isInWishlist) {
-      wishlistDispatch({ type: 'REMOVE_FROM_WISHLIST', payload: product._id });
-      toast.info('Removed from wishlist');
+      wishlistDispatch({ type: "REMOVE_FROM_WISHLIST", payload: product._id })
+      toast.info("Removed from wishlist")
     } else {
       wishlistDispatch({
-        type: 'ADD_TO_WISHLIST',
+        type: "ADD_TO_WISHLIST",
         payload: {
           id: product._id,
           name: product.title,
           price: product.price,
           image: product.image,
         },
-      });
-      toast.dark('Added to wishlist');
+      })
+      toast.dark("Added to wishlist")
     }
-    setIsInWishlist(!isInWishlist);
-  };
+    setIsInWishlist(!isInWishlist)
+  }
 
   const handleAddReview = async () => {
-    if (!product || newReview.trim() === "" || userName.trim() === "") return;
+    if (!product || newReview.trim() === "" || userName.trim() === "") return
 
     const newReviewItem = {
       _type: "review",
@@ -130,72 +150,109 @@ export default function ProductPage() {
       text: newReview,
       userName,
       createdAt: new Date().toISOString(),
-    };
+    }
 
     try {
-      const createdReview = await client.create(newReviewItem);
+      const createdReview = await client.create(newReviewItem)
       setProduct({
         ...product,
-        reviews: [createdReview, ...product.reviews]
-      });
-      setNewReview("");
-      setUserName("");
-      toast.success('Review added successfully!');
+        reviews: [createdReview, ...product.reviews],
+      })
+      setNewReview("")
+      setUserName("")
+      toast.success("Review added successfully!")
     } catch (error) {
-      console.error("Error adding review: ", error);
-      toast.error('Failed to add review. Please try again.');
+      console.error("Error adding review: ", error)
+      toast.error("Failed to add review. Please try again.")
     }
-  };
+  }
 
   const handleEditReview = (id: string) => {
-    const reviewToEdit = product?.reviews.find((review) => review._id === id);
+    const reviewToEdit = product?.reviews.find((review) => review._id === id)
     if (reviewToEdit) {
-      setEditingReview(id);
-      setEditText(reviewToEdit.text);
+      setEditingReview(id)
+      setEditText(reviewToEdit.text)
     }
-  };
+  }
 
   const handleSaveEditedReview = async (id: string) => {
-    if (!product) return;
+    if (!product) return
 
-    const updatedReview = product.reviews.find((review) => review._id === id);
+    const updatedReview = product.reviews.find((review) => review._id === id)
     if (updatedReview) {
-      const updatedReviewItem = { ...updatedReview, text: editText };
+      const updatedReviewItem = { ...updatedReview, text: editText }
       try {
-        await client.patch(updatedReview._id).set(updatedReviewItem).commit();
+        await client.patch(updatedReview._id).set(updatedReviewItem).commit()
         setProduct({
           ...product,
-          reviews: product.reviews.map((review) =>
-            review._id === id ? { ...review, text: editText } : review
-          )
-        });
-        setEditingReview(null);
-        toast.success('Review updated successfully!');
+          reviews: product.reviews.map((review) => (review._id === id ? { ...review, text: editText } : review)),
+        })
+        setEditingReview(null)
+        toast.success("Review updated successfully!")
       } catch (error) {
-        console.error("Error updating review: ", error);
-        toast.error('Failed to update review. Please try again.');
+        console.error("Error updating review: ", error)
+        toast.error("Failed to update review. Please try again.")
       }
     }
-  };
+  }
 
   const handleDeleteReview = async (id: string) => {
-    if (!product) return;
+    if (!product) return
 
     try {
-      await client.delete(id);
+      await client.delete(id)
       setProduct({
         ...product,
-        reviews: product.reviews.filter((review) => review._id !== id)
-      });
-      toast.info('Review deleted successfully!');
+        reviews: product.reviews.filter((review) => review._id !== id),
+      })
+      toast.info("Review deleted successfully!")
     } catch (error) {
-      console.error("Error deleting review: ", error);
-      toast.error('Failed to delete review. Please try again.');
+      console.error("Error deleting review: ", error)
+      toast.error("Failed to delete review. Please try again.")
     }
-  };
+  }
 
   if (!product) {
-    return <div>Loading product details...</div>;
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex md:flex-col gap-4 order-2 md:order-1">
+              {[...Array(4)].map((_, index) => (
+                <Skeleton key={index} className="w-[70px] h-[70px] md:w-[100px] md:h-[100px]" />
+              ))}
+            </div>
+            <Skeleton className="flex-1 h-[400px] md:h-[600px] order-1 md:order-2" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-6 w-1/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-20 w-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-1/4" />
+              <div className="flex gap-4">
+                {[...Array(3)].map((_, index) => (
+                  <Skeleton key={index} className="w-10 h-10 rounded-xl" />
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-1/4" />
+              <div className="flex gap-4">
+                {[...Array(3)].map((_, index) => (
+                  <Skeleton key={index} className="w-8 h-8 rounded-full" />
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <Skeleton className="h-10 w-1/3" />
+              <Skeleton className="h-10 flex-1" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const images = [
@@ -203,10 +260,10 @@ export default function ProductPage() {
     urlFor(product.image).url(),
     urlFor(product.image).url(),
     urlFor(product.image).url(),
-  ];
+  ]
 
-  const sizes = ['L', 'XL', 'XS'];
-  const colors = ['purple', 'black', 'gold'];
+  const sizes = ["L", "XL", "XS"]
+  const colors = ["purple", "black", "gold"]
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -218,8 +275,8 @@ export default function ProductPage() {
             {images.map((img, index) => (
               <button
                 key={index}
-                className={`border-2 ${index === selectedImage ? 'border-[#B88E2F]' : 'border-transparent'} hover:border-[#B88E2F] transition-colors duration-200`}
-                onClick={() => setSelectedImage(index)} 
+                className={`border-2 ${index === selectedImage ? "border-[#B88E2F]" : "border-transparent"} hover:border-[#B88E2F] transition-colors duration-200`}
+                onClick={() => setSelectedImage(index)}
               >
                 <Image
                   src={img || "/placeholder.svg"}
@@ -252,9 +309,7 @@ export default function ProductPage() {
                 <div className="text-2xl text-red-500">
                   $ {((product.price * (100 - product.discountPercentage)) / 100).toLocaleString()}
                 </div>
-                <div className="text-xl text-gray-500 line-through">
-                  $ {product.price.toLocaleString()}
-                </div>
+                <div className="text-xl text-gray-500 line-through">$ {product.price.toLocaleString()}</div>
                 <div className="text-sm bg-red-500 text-white px-2 py-1 rounded-full">
                   {product.discountPercentage}% OFF
                 </div>
@@ -268,10 +323,12 @@ export default function ProductPage() {
           <div className="flex items-center gap-4">
             <div className="flex">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className={`w-5 h-5 ${i < 4 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                <Star key={i} className={`w-5 h-5 ${i < 4 ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`} />
               ))}
             </div>
-            <span className="text-[#3A3A3A] text-sm">{product.reviews.length} Customer Review{product.reviews.length !== 1 ? 's' : ''}</span>
+            <span className="text-[#3A3A3A] text-sm">
+              {product.reviews.length} Customer Review{product.reviews.length !== 1 ? "s" : ""}
+            </span>
           </div>
 
           <p className="text-[#3A3A3A] text-base">{product.description}</p>
@@ -284,9 +341,7 @@ export default function ProductPage() {
                 <button
                   key={size}
                   className={`w-10 h-10 rounded-xl border text-sm font-bold ${
-                    size === 'L'
-                      ? 'border-[#B88E2F] bg-[#B88E2F] text-white'
-                      : 'border-[#D9D9D9] text-[#3A3A3A]'
+                    size === "L" ? "border-[#B88E2F] bg-[#B88E2F] text-white" : "border-[#D9D9D9] text-[#3A3A3A]"
                   } hover:border-[#B88E2F] transition-colors duration-200`}
                 >
                   {size}
@@ -303,10 +358,8 @@ export default function ProductPage() {
                 <button
                   key={color}
                   className={`w-8 h-8 rounded-full ${
-                    color === 'purple' ? 'bg-purple-500' :
-                    color === 'black' ? 'bg-black' :
-                    'bg-yellow-700'
-                  } ${color === 'purple' ? 'ring-2 ring-offset-2 ring-[#B88E2F]' : ''} hover:ring-2 hover:ring-offset-2 hover:ring-[#B88E2F] transition-all duration-200`}
+                    color === "purple" ? "bg-purple-500" : color === "black" ? "bg-black" : "bg-yellow-700"
+                  } ${color === "purple" ? "ring-2 ring-offset-2 ring-[#B88E2F]" : ""} hover:ring-2 hover:ring-offset-2 hover:ring-[#B88E2F] transition-all duration-200`}
                 />
               ))}
             </div>
@@ -330,10 +383,11 @@ export default function ProductPage() {
               </button>
             </div>
             <Button
-              className="flex-1 bg-[#B88E2F] hover:bg-[#A67B1F] text-white"
+              className="flex-1 bg-[#B88E2F] hover:bg-[#A67B1F] text-white disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={addToCart}
+              disabled={product.stockLevel <= 0}
             >
-              Add To Cart
+              {product.stockLevel > 0 ? "Add To Cart" : "Out of Stock"}
             </Button>
           </div>
 
@@ -341,11 +395,15 @@ export default function ProductPage() {
           <div className="space-y-4 pt-6 border-t border-[#D9D9D9]">
             <div className="flex gap-2">
               <span className="text-[#3A3A3A]">SKU</span>
-              <span className="text-[#9F9F9F]">: {product._id.padStart(6, '0')}</span>
+              <span className="text-[#9F9F9F]">: {product._id.padStart(6, "0")}</span>
             </div>
             <div className="flex gap-2">
               <span className="text-[#3A3A3A]">Category</span>
               <span className="text-[#9F9F9F]">: {product.category}</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-[#3A3A3A]">Stock</span>
+              <span className="text-[#9F9F9F]">: {product.stockLevel > 0 ? product.stockLevel : "Out of Stock"}</span>
             </div>
             <div className="flex gap-2">
               <span className="text-[#3A3A3A]">Tags</span>
@@ -366,11 +424,8 @@ export default function ProductPage() {
                   </button>
                 </div>
               </div>
-              <button
-                className="hover:text-[#B88E2F] transition-colors duration-200"
-                onClick={toggleWishlist}
-              >
-                <Heart className="w-5 h-5" fill={isInWishlist ? '#B88E2F' : 'none'} />
+              <button className="hover:text-[#B88E2F] transition-colors duration-200" onClick={toggleWishlist}>
+                <Heart className="w-5 h-5" fill={isInWishlist ? "#B88E2F" : "none"} />
               </button>
             </div>
           </div>
@@ -390,52 +445,52 @@ export default function ProductPage() {
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
               {tab === "reviews" && ` (${product.reviews.length})`}
-              {activeTab === tab && (
-                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black" />
-              )}
+              {activeTab === tab && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black" />}
             </button>
           ))}
         </div>
 
         <div className="space-y-6">
-          {activeTab === "description" && (
-            <p className="text-gray-600 leading-relaxed">{product.description}</p>
+          {activeTab === "description" && <p className="text-gray-600 leading-relaxed">{product.description}</p>}
+
+          {activeTab === "additional" && (
+            <div className="text-gray-600 leading-relaxed">
+              <h3 className="text-lg font-semibold mb-2">Frequently Asked Questions</h3>
+              <div className="mb-4">
+                <strong>Q: How do I place an order?</strong>
+                <p>
+                  A: Browse our products, add your desired items to the cart, and proceed to checkout to complete your
+                  purchase.
+                </p>
+              </div>
+              <div className="mb-4">
+                <strong>Q: What payment methods do you accept?</strong>
+                <p>A: We accept various payment methods, including credit/debit cards and online payment gateways.</p>
+              </div>
+              <div className="mb-4">
+                <strong>Q: Is my payment information secure?</strong>
+                <p>A: Yes, we use industry-standard encryption to protect your payment details.</p>
+              </div>
+              <div className="mb-4">
+                <strong>Q: Do you offer international shipping?</strong>
+                <p>A: Currently, we ship within Pakistan. International shipping options will be available soon.</p>
+              </div>
+              <div className="mb-4">
+                <strong>Q: What is your return policy?</strong>
+                <p>A: We offer free returns within 30 days of purchase. Items must be in original condition.</p>
+              </div>
+              <div className="mb-4">
+                <strong>Q: How can I track my order?</strong>
+                <p>
+                  A: Once your order is shipped, you'll receive a tracking number via email to monitor your shipment.
+                </p>
+              </div>
+              <div className="mb-4">
+                <strong>Q: How can I contact customer support?</strong>
+                <p>A: You can reach us through the 'Contact' page on our website or email us at support@example.com</p>
+              </div>
+            </div>
           )}
-
-{activeTab === "additional" && (
-  <div className="text-gray-600 leading-relaxed">
-    <h3 className="text-lg font-semibold mb-2">Frequently Asked Questions</h3>
-    <div className="mb-4">
-      <strong>Q: How do I place an order?</strong>
-      <p>A: Browse our products, add your desired items to the cart, and proceed to checkout to complete your purchase.</p>
-    </div>
-    <div className="mb-4">
-      <strong>Q: What payment methods do you accept?</strong>
-      <p>A: We accept various payment methods, including credit/debit cards and online payment gateways.</p>
-    </div>
-    <div className="mb-4">
-      <strong>Q: Is my payment information secure?</strong>
-      <p>A: Yes, we use industry-standard encryption to protect your payment details.</p>
-    </div>
-    <div className="mb-4">
-      <strong>Q: Do you offer international shipping?</strong>
-      <p>A: Currently, we ship within Pakistan. International shipping options will be available soon.</p>
-    </div>
-    <div className="mb-4">
-      <strong>Q: What is your return policy?</strong>
-      <p>A: We offer free returns within 30 days of purchase. Items must be in original condition.</p>
-    </div>
-    <div className="mb-4">
-      <strong>Q: How can I track my order?</strong>
-      <p>A: Once your order is shipped, you'll receive a tracking number via email to monitor your shipment.</p>
-    </div>
-    <div className="mb-4">
-      <strong>Q: How can I contact customer support?</strong>
-      <p>A: You can reach us through the 'Contact' page on our website or email us at muhammadhuzaifa200t@gmail.com</p>
-    </div>
-  </div>
-)}
-
 
           {activeTab === "reviews" && (
             <div className="text-gray-600">
@@ -468,9 +523,7 @@ export default function ProductPage() {
               {/* Display Reviews */}
               <div className="space-y-4">
                 {product.reviews.length === 0 ? (
-                  <p className="text-center py-8 bg-gray-50 rounded-lg">
-                    No reviews yet. Be the first to write one!
-                  </p>
+                  <p className="text-center py-8 bg-gray-50 rounded-lg">No reviews yet. Be the first to write one!</p>
                 ) : (
                   product.reviews.map((review) => (
                     <div key={review._id} className="bg-gray-50 p-4 rounded-lg">
@@ -494,9 +547,7 @@ export default function ProductPage() {
                         <p className="text-gray-700">{review.text}</p>
                       )}
                       <div className="flex justify-between items-center mt-2">
-                        <p className="text-sm text-gray-500">
-                          {new Date(review.createdAt).toLocaleDateString()}
-                        </p>
+                        <p className="text-sm text-gray-500">{new Date(review.createdAt).toLocaleDateString()}</p>
                         <div className="space-x-2">
                           <button
                             onClick={() => handleEditReview(review._id)}
@@ -529,6 +580,6 @@ export default function ProductPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
