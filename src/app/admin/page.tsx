@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,25 @@ export default function AdminLoginClient() {
   const router = useRouter();
   const { toast } = useToast();
 
+  useEffect(() => {
+    // ✅ Auto-redirect to dashboard if already logged in
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/check-auth", {
+          method: "GET",
+          credentials: "include", // 🔥 Ensures authToken cookie is sent
+        });
+
+        if (response.ok) {
+          router.push("/dashboard");
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
+      }
+    };
+    checkAuth();
+  }, [router]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -27,7 +46,7 @@ export default function AdminLoginClient() {
       const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // ✅ Ensures cookies work across all devices
+        credentials: "include", // 🔥 Ensures the cookie is stored properly
         body: JSON.stringify({ email, password }),
       });
 
@@ -38,11 +57,12 @@ export default function AdminLoginClient() {
           title: "Login successful",
           description: "Welcome back, Admin!",
         });
+
         setIsCorrect(true);
 
-        // 🔥 Ensures the page reloads properly to apply authentication
+        // 🔥 Reload session after login to prevent auto-logout
         setTimeout(() => {
-          router.refresh(); // ✅ Ensures session is applied before redirect
+          router.refresh();
           router.push("/dashboard");
         }, 1000);
       } else {
