@@ -1,70 +1,74 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
-import { Package, Loader2, Lock, CheckCircle } from "lucide-react"
-import { motion } from "framer-motion"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { Package, Loader2, Lock, CheckCircle } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function AdminLoginClient() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [attempts, setAttempts] = useState(0)
-  const [isLocked, setIsLocked] = useState(false)
-  const [isCorrect, setIsCorrect] = useState(false)
-  const router = useRouter()
-  const { toast } = useToast()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
       const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // ✅ Ensures cookies work across all devices
         body: JSON.stringify({ email, password }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (data.success) {
         toast({
           title: "Login successful",
           description: "Welcome back, Admin!",
-        })
-        setIsCorrect(true)
-        // Simulate a delay for a smoother transition
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        router.push("/dashboard")
+        });
+        setIsCorrect(true);
+
+        // 🔥 Ensures the page reloads properly to apply authentication
+        setTimeout(() => {
+          router.refresh(); // ✅ Ensures session is applied before redirect
+          router.push("/dashboard");
+        }, 1000);
       } else {
-        throw new Error(data.message || "Invalid credentials")
+        throw new Error(data.message || "Invalid credentials");
       }
     } catch (error) {
-      const newAttempts = attempts + 1
-      setAttempts(newAttempts)
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
       if (newAttempts >= 3) {
-        setIsLocked(true)
+        setIsLocked(true);
         toast({
           title: "Account locked",
           description: "Too many failed attempts. Please try again later.",
           variant: "destructive",
-        })
+        });
       } else {
         toast({
           title: "Login failed",
           description: error instanceof Error ? error.message : "An unexpected error occurred",
           variant: "destructive",
-        })
+        });
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">

@@ -1,4 +1,3 @@
-// app/api/check-auth/route.ts
 import { NextResponse } from "next/server";
 import { verifyToken } from "@/lib/jwt";
 
@@ -14,8 +13,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const isValidToken = verifyToken(authToken);
-    if (await isValidToken) {
+    const isValidToken = await verifyToken(authToken);
+    if (isValidToken) {
       return NextResponse.json({ isAuthenticated: true }, { status: 200 });
     } else {
       throw new Error("Invalid token");
