@@ -19,15 +19,15 @@ export default function AdminLoginClient() {
   const router = useRouter();
   const { toast } = useToast();
 
+  // Check authentication on component mount
+  // (Ensure that /api/check-auth includes credentials in your implementation)
   useEffect(() => {
-    // ✅ Auto-redirect to dashboard if already logged in
     const checkAuth = async () => {
       try {
         const response = await fetch("/api/check-auth", {
           method: "GET",
-          credentials: "include", // 🔥 Ensures authToken cookie is sent
+          credentials: "include", // Ensure cookies are sent
         });
-
         if (response.ok) {
           router.push("/dashboard");
         }
@@ -35,8 +35,10 @@ export default function AdminLoginClient() {
         console.error("Auth check failed:", error);
       }
     };
+
     checkAuth();
-  }, [router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +48,7 @@ export default function AdminLoginClient() {
       const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // 🔥 Ensures the cookie is stored properly
+        credentials: "include", // Ensure the authToken cookie is stored and sent
         body: JSON.stringify({ email, password }),
       });
 
@@ -57,10 +59,8 @@ export default function AdminLoginClient() {
           title: "Login successful",
           description: "Welcome back, Admin!",
         });
-
         setIsCorrect(true);
-
-        // 🔥 Reload session after login to prevent auto-logout
+        // Wait a bit, then refresh and navigate to dashboard
         setTimeout(() => {
           router.refresh();
           router.push("/dashboard");
