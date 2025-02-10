@@ -30,31 +30,39 @@ type Product = {
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true"
-    setIsLoggedIn(loggedIn)
-    if (!loggedIn) {
-      toast({
-        title: "Unauthorized",
-        description: "Please log in to view products.",
-        variant: "destructive",
-      })
-      router.push("/admin")
-    } else {
-      fetchProducts().then(setProducts).catch(console.error)
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/check-auth")
+        if (response.ok) {
+          setIsLoading(false)
+          fetchProducts().then(setProducts).catch(console.error)
 
-      const subscription = listenToProducts((update) => {
-        if (update.type === "mutation") {
-          setProducts(update.result)
+          const subscription = listenToProducts((update) => {
+            if (update.type === "mutation") {
+              setProducts(update.result)
+            }
+          })
+
+          return () => subscription.unsubscribe()
+        } else {
+          throw new Error("Not authenticated")
         }
-      })
-
-      return () => subscription.unsubscribe()
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        toast({
+          title: "Unauthorized",
+          description: "Please log in to view products.",
+          variant: "destructive",
+        })
+        router.push("/admin")
+      }
     }
+    checkAuth()
   }, [router, toast])
 
   const handleEditProduct = (product: Product) => {
@@ -63,8 +71,6 @@ export default function ProductsPage() {
 
   const handleSaveEdit = async (updatedProduct: Product) => {
     try {
-   
-
       setProducts((prevProducts) =>
         prevProducts.map((product) => (product._id === updatedProduct._id ? updatedProduct : product)),
       )
@@ -85,8 +91,6 @@ export default function ProductsPage() {
 
   const handleDeleteProduct = async (productId: string) => {
     try {
-   
-
       setProducts((prevProducts) => prevProducts.filter((product) => product._id !== productId))
       toast({
         title: "Product deleted",
@@ -102,8 +106,8 @@ export default function ProductsPage() {
     }
   }
 
-  if (!isLoggedIn) {
-    return null
+  if (isLoading) {
+    return <div>Loading...</div>
   }
 
   return (

@@ -20,16 +20,32 @@ export function UserNav() {
   const router = useRouter()
   const { toast } = useToast()
 
-  const handleLogout = () => {
-    // Clear the user's session
-    localStorage.removeItem("isLoggedIn")
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
-    })
-    router.push("/admin")
-  }
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      })
 
+      if (response.ok) {
+        localStorage.removeItem("isLoggedIn")
+        toast({
+          title: "Logged out",
+          description: "You have been successfully logged out.",
+        })
+        router.push("/admin")
+      } else {
+        throw new Error("Logout failed")
+      }
+    } catch (error) {
+      console.error("Logout error:", error)
+      toast({
+        title: "Logout failed",
+        description: "An error occurred while logging out. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

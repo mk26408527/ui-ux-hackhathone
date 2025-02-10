@@ -29,43 +29,53 @@ type Customer = {
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true"
-    setIsLoggedIn(loggedIn)
-    if (!loggedIn) {
-      toast({
-        title: "Unauthorized",
-        description: "Please log in to view customers.",
-        variant: "destructive",
-      })
-      router.push("/admin")
-    } else {
-      fetchCustomers().then((data) => setCustomers(data as Customer[])).catch(console.error)
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/check-auth")
+        if (response.ok) {
+          setIsLoading(false)
+          fetchCustomers()
+            .then((data) => setCustomers(data as Customer[]))
+            .catch(console.error)
 
-      const subscription = listenToCustomers((update) => {
-        if (update.type === "insert" || update.type === "update") {
-          setCustomers((prevCustomers) => {
-            const updatedCustomer = update.result
-            const index = prevCustomers.findIndex((customer) => customer._id === updatedCustomer._id)
-            if (index !== -1) {
-              const newCustomers = [...prevCustomers]
-              newCustomers[index] = updatedCustomer
-              return newCustomers
-            } else {
-              return [updatedCustomer, ...prevCustomers]
+          const subscription = listenToCustomers((update) => {
+            if (update.type === "insert" || update.type === "update") {
+              setCustomers((prevCustomers) => {
+                const updatedCustomer = update.result
+                const index = prevCustomers.findIndex((customer) => customer._id === updatedCustomer._id)
+                if (index !== -1) {
+                  const newCustomers = [...prevCustomers]
+                  newCustomers[index] = updatedCustomer
+                  return newCustomers
+                } else {
+                  return [updatedCustomer, ...prevCustomers]
+                }
+              })
+            } else if (update.type === "delete") {
+              setCustomers((prevCustomers) => prevCustomers.filter((customer) => customer._id !== update.documentId))
             }
           })
-        } else if (update.type === "delete") {
-          setCustomers((prevCustomers) => prevCustomers.filter((customer) => customer._id !== update.documentId))
-        }
-      })
 
-      return () => subscription.unsubscribe()
+          return () => subscription.unsubscribe()
+        } else {
+          throw new Error("Not authenticated")
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        toast({
+          title: "Unauthorized",
+          description: "Please log in to view customers.",
+          variant: "destructive",
+        })
+        router.push("/admin")
+      }
     }
+    checkAuth()
   }, [router, toast])
 
   const handleEditCustomer = (customer: Customer) => {
@@ -93,8 +103,8 @@ export default function CustomersPage() {
     })
   }
 
-  if (!isLoggedIn) {
-    return null
+  if (isLoading) {
+    return <div>Loading...</div>
   }
 
   return (

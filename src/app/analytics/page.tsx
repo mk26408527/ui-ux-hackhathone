@@ -12,25 +12,35 @@ import { InventoryStatus } from "@/components/inventory-status"
 import { useToast } from "@/hooks/use-toast"
 
 export default function AnalyticsPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true"
-    setIsLoggedIn(loggedIn)
-    if (!loggedIn) {
-      toast({
-        title: "Unauthorized",
-        description: "Please log in to view analytics.",
-        variant: "destructive",
-      })
-      router.push("/admin")
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/check-auth")
+        if (response.ok) {
+          setIsLoading(false)
+          // Fetch any necessary data for analytics here
+        } else {
+          throw new Error("Not authenticated")
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        toast({
+          title: "Unauthorized",
+          description: "Please log in to view analytics.",
+          variant: "destructive",
+        })
+        router.push("/admin")
+      }
     }
+    checkAuth()
   }, [router, toast])
 
-  if (!isLoggedIn) {
-    return null // or a loading spinner
+  if (isLoading) {
+    return <div>Loading...</div>
   }
 
   return (

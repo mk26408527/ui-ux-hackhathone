@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Package, Loader2, Lock, CheckCircle } from "lucide-react"
 import { motion } from "framer-motion"
 
-export default function AdminPage() {
+export default function AdminLoginClient() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -19,54 +19,48 @@ export default function AdminPage() {
   const router = useRouter()
   const { toast } = useToast()
 
-  useEffect(() => {
-    // Check if user is already logged in
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true"
-    if (isLoggedIn) {
-      router.push("/dashboard")
-    }
-  }, [router])
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      const storedPassword = localStorage.getItem("userPassword") || "huzaifa200gtr"
-      if (email === "hezzi@gmail.com" && password === storedPassword) {
-        // Successful login
-        localStorage.setItem("isLoggedIn", "true")
-        localStorage.setItem("userEmail", email)
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
         toast({
           title: "Login successful",
           description: "Welcome back, Admin!",
         })
         setIsCorrect(true)
         // Simulate a delay for a smoother transition
-        await new Promise((resolve) => setTimeout(resolve, 3000))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
         router.push("/dashboard")
       } else {
-        // Incorrect login
-        const newAttempts = attempts + 1
-        setAttempts(newAttempts)
-        if (newAttempts >= 3) {
-          setIsLocked(true)
-          toast({
-            title: "Account locked",
-            description: "Too many failed attempts. Please try again later.",
-            variant: "destructive",
-          })
-        } else {
-          throw new Error("Invalid credentials")
-        }
+        throw new Error(data.message || "Invalid credentials")
       }
     } catch (error) {
-      console.error("Login error:", error)
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive",
-      })
+      const newAttempts = attempts + 1
+      setAttempts(newAttempts)
+      if (newAttempts >= 3) {
+        setIsLocked(true)
+        toast({
+          title: "Account locked",
+          description: "Too many failed attempts. Please try again later.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Login failed",
+          description: error instanceof Error ? error.message : "An unexpected error occurred",
+          variant: "destructive",
+        })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -85,10 +79,7 @@ export default function AdminPage() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <label
-                  htmlFor="email"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
+                <label htmlFor="email" className="text-sm font-medium leading-none">
                   Email
                 </label>
                 <Input
@@ -103,10 +94,7 @@ export default function AdminPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label
-                  htmlFor="password"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
+                <label htmlFor="password" className="text-sm font-medium leading-none">
                   Password
                 </label>
                 <Input
@@ -120,11 +108,7 @@ export default function AdminPage() {
                   className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <Button
-                type="submit"
-                className="w-full transition-all duration-200 hover:bg-blue-600"
-                disabled={isLoading || isLocked}
-              >
+              <Button type="submit" className="w-full transition-all duration-200 hover:bg-blue-600" disabled={isLoading || isLocked}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -161,6 +145,5 @@ export default function AdminPage() {
         </Card>
       </motion.div>
     </div>
-  )
+  );
 }
-

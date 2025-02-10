@@ -17,31 +17,28 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true"
-    setIsLoggedIn(loggedIn)
-    if (!loggedIn) {
-      router.push("/admin")
+    // Check if user is authenticated
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/check-auth")
+        if (!response.ok) {
+          router.push("/admin")
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        router.push("/admin")
+      }
     }
+    checkAuth()
   }, [router])
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
-    if (!isLoggedIn) {
-      toast({
-        title: "Unauthorized",
-        description: "Please log in to change your password.",
-        variant: "destructive",
-      })
-      router.push("/admin")
-      return
-    }
 
     if (newPassword !== confirmPassword) {
       toast({
@@ -54,14 +51,15 @@ export default function SettingsPage() {
     }
 
     try {
-      const storedPassword = localStorage.getItem("userPassword") || "huzaifa200gtr"
-      if (currentPassword === storedPassword) {
-        // Simulating API call
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+      const response = await fetch("/api/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      })
 
-        // Update the password in localStorage
-        localStorage.setItem("userPassword", newPassword)
+      const data = await response.json()
 
+      if (data.success) {
         toast({
           title: "Password updated",
           description: "Your password has been successfully changed.",
@@ -70,7 +68,7 @@ export default function SettingsPage() {
         setNewPassword("")
         setConfirmPassword("")
       } else {
-        throw new Error("Current password is incorrect")
+        throw new Error(data.message || "Failed to change password")
       }
     } catch (error) {
       console.error("Password change error:", error)
@@ -84,17 +82,15 @@ export default function SettingsPage() {
     }
   }
 
-  if (!isLoggedIn) {
-    return null // or a loading spinner
-  }
-
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
       <aside className="hidden w-64 overflow-y-auto bg-white dark:bg-gray-800 md:block">
         <div className="py-4 px-3">
           <Link href="/dashboard" className="flex items-center pl-2.5 mb-5">
             <Package className="h-6 w-6 mr-2 text-blue-600" />
-            <span className="self-center text-xl font-semibold whitespace-nowrap dark:text-white">Furniture Store</span>
+            <span className="self-center text-xl font-semibold whitespace-nowrap dark:text-white">
+              Furniture Store
+            </span>
           </Link>
           <DashboardNav />
         </div>
@@ -163,4 +159,3 @@ export default function SettingsPage() {
     </div>
   )
 }
-

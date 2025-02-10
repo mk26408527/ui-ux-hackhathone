@@ -1,8 +1,9 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client"
 
-import { useState, type ChangeEvent, useEffect } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
@@ -17,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+// import { useAuth } from "@/hooks/use-auth"
 import {
   fetchProducts,
   fetchOrders,
@@ -43,7 +45,7 @@ interface PerformanceData {
   customers: number
 }
 
-function ProfilePage() {
+export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData>({
     name: "Muhammad Huzaifa",
     email: "huzaifa@gmail.com",
@@ -61,87 +63,99 @@ function ProfilePage() {
   })
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [tempProfile, setTempProfile] = useState<ProfileData>(profile)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  // const { isLoggedIn, isLoading } = useAuth()
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true"
-    setIsLoggedIn(loggedIn)
-    if (!loggedIn) {
-      router.push("/admin")
-    } else {
-      // Fetch initial data
-      fetchInitialData()
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/check-auth")
+        if (response.ok) {
+          setIsLoading(false)
+          // Fetch initial data
+          fetchInitialData()
 
-      // Set up real-time listeners
-      const productsSubscription = listenToProducts(handleProductsUpdate)
-      const ordersSubscription = listenToOrders(handleOrdersUpdate)
-      const customersSubscription = listenToCustomers(handleCustomersUpdate)
+          // Set up real-time listeners
+          const productsSubscription = listenToProducts(handleProductsUpdate)
+          const ordersSubscription = listenToOrders(handleOrdersUpdate)
+          const customersSubscription = listenToCustomers(handleCustomersUpdate)
 
-      // Clean up subscriptions
-      return () => {
-        productsSubscription.unsubscribe()
-        ordersSubscription.unsubscribe()
-        customersSubscription.unsubscribe()
+          // Clean up subscriptions
+          return () => {
+            productsSubscription.unsubscribe()
+            ordersSubscription.unsubscribe()
+            customersSubscription.unsubscribe()
+          }
+        } else {
+          throw new Error("Not authenticated")
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        toast({
+          title: "Unauthorized",
+          description: "Please log in to view your profile.",
+          variant: "destructive",
+        })
+        router.push("/admin")
       }
     }
-  }, [router])
+    checkAuth()
+  }, [router, toast])
 
   const fetchInitialData = async () => {
     try {
       const [products, orders, customers] = await Promise.all([fetchProducts(), fetchOrders(), fetchCustomers()])
-
-      updatePerformanceData(products, orders, customers)
+      setPerformanceData({
+        products: products.length,
+        orders: orders.length,
+        revenue: orders.reduce((sum: number, order: { total?: number }) => sum + (order.total || 0), 0),
+        customers: customers.length,
+      })
     } catch (error) {
       console.error("Error fetching initial data:", error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch initial data. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
-  const handleProductsUpdate = (update: any) => {
-    if (update.type === "update") {
-      setPerformanceData((prev) => ({ ...prev, products: update.result.length }))
+  const handleProductsUpdate = (update: { type: string }) => {
+    if (update.type === "insert" || update.type === "update") {
+      setPerformanceData((prev) => ({ ...prev, products: prev.products + 1 }))
+    } else if (update.type === "delete") {
+      setPerformanceData((prev) => ({ ...prev, products: prev.products - 1 }))
     }
   }
 
-  const handleOrdersUpdate = (update: any) => {
-    if (update.type === "update") {
-      const totalRevenue = update.result.reduce((sum: number, order: any) => sum + (order.total || 0), 0)
+  const handleOrdersUpdate = (update: { type: string; result: { total: any } }) => {
+    if (update.type === "insert" || update.type === "update") {
       setPerformanceData((prev) => ({
         ...prev,
-        orders: update.result.length,
-        revenue: totalRevenue,
+        orders: prev.orders + 1,
+        revenue: prev.revenue + (update.result.total || 0),
+      }))
+    } else if (update.type === "delete") {
+      setPerformanceData((prev) => ({
+        ...prev,
+        orders: prev.orders - 1,
+        revenue: prev.revenue - (update.result.total || 0),
       }))
     }
   }
 
-  const handleCustomersUpdate = (update: any) => {
-    if (update.type === "update") {
-      setPerformanceData((prev) => ({ ...prev, customers: update.result.length }))
+  const handleCustomersUpdate = (update: { type: string }) => {
+    if (update.type === "insert" || update.type === "update") {
+      setPerformanceData((prev) => ({ ...prev, customers: prev.customers + 1 }))
+    } else if (update.type === "delete") {
+      setPerformanceData((prev) => ({ ...prev, customers: prev.customers - 1 }))
     }
   }
 
-  const updatePerformanceData = (products: any[], orders: any[], customers: any[]) => {
-    const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0)
-    setPerformanceData({
-      products: products.length,
-      orders: orders.length,
-      revenue: totalRevenue,
-      customers: customers.length,
-    })
-  }
-
-  // Save text field changes
   const handleProfileSave = () => {
-    if (!isLoggedIn) {
-      toast({
-        title: "Unauthorized",
-        description: "Please log in to edit your profile.",
-        variant: "destructive",
-      })
-      router.push("/admin")
-      return
-    }
     setProfile(tempProfile)
     setIsEditOpen(false)
     toast({
@@ -150,17 +164,7 @@ function ProfilePage() {
     })
   }
 
-  // Handle image upload and preview using FileReader API.
-  const handlePicChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (!isLoggedIn) {
-      toast({
-        title: "Unauthorized",
-        description: "Please log in to change your profile picture.",
-        variant: "destructive",
-      })
-      router.push("/admin")
-      return
-    }
+  const handlePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
@@ -173,13 +177,12 @@ function ProfilePage() {
     reader.readAsDataURL(file)
   }
 
-  if (!isLoggedIn) {
-    return null // or a loading spinner
+  if (isLoading) {
+    return <div>Loading...</div>
   }
 
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
-      {/* Sidebar */}
       <aside className="hidden w-64 overflow-y-auto bg-white dark:bg-gray-800 md:block">
         <div className="py-4 px-3">
           <Link href="/dashboard" className="flex items-center pl-2.5 mb-5">
@@ -190,9 +193,7 @@ function ProfilePage() {
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className="flex flex-col flex-1">
-        {/* Header */}
         <header className="z-10 py-4 bg-white shadow-md dark:bg-gray-800">
           <div className="container flex items-center justify-between h-full px-6 mx-auto">
             <h1 className="text-2xl font-semibold text-gray-700 dark:text-gray-200">Profile</h1>
@@ -200,12 +201,10 @@ function ProfilePage() {
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="h-full overflow-y-auto">
           <div className="container px-6 mx-auto grid">
             <div className="py-6">
               <div className="grid gap-6 mb-8 md:grid-cols-3">
-                {/* Profile Card */}
                 <Card className="md:col-span-1">
                   <CardContent className="flex flex-col items-center pt-6">
                     <div className="relative">
@@ -215,7 +214,6 @@ function ProfilePage() {
                           <User className="h-8 w-8" />
                         </AvatarFallback>
                       </Avatar>
-                      {/* Overlay for uploading a new picture */}
                       <label
                         htmlFor="profile-pic-input"
                         className="absolute bottom-0 right-0 rounded-full bg-white p-1 shadow cursor-pointer"
@@ -252,7 +250,6 @@ function ProfilePage() {
                         <span className="text-gray-600 dark:text-gray-400">{profile.joined}</span>
                       </div>
                     </div>
-                    {/* Edit Profile Dialog Trigger */}
                     <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                       <DialogTrigger asChild>
                         <Button className="mt-6 w-full">Edit Profile</Button>
@@ -338,7 +335,6 @@ function ProfilePage() {
                   </CardContent>
                 </Card>
 
-                {/* Performance Overview Card */}
                 <Card className="md:col-span-2">
                   <CardHeader>
                     <CardTitle className="text-xl font-semibold text-gray-700 dark:text-gray-200">
@@ -346,7 +342,6 @@ function ProfilePage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {/* Only one tab ("Activity") is displayed */}
                     <Tabs defaultValue="activity" className="w-full">
                       <TabsList>
                         <TabsTrigger value="activity">Activity</TabsTrigger>
@@ -386,6 +381,4 @@ function ProfilePage() {
     </div>
   )
 }
-
-export default ProfilePage
 

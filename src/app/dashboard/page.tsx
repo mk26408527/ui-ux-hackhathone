@@ -24,43 +24,49 @@ interface Order {
 }
 
 export default function DashboardPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [orders, setOrders] = useState<Order[]>([])
   const [totalRevenue, setTotalRevenue] = useState(0)
   const [totalCustomers, setTotalCustomers] = useState(0)
   const router = useRouter()
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true"
-    setIsLoggedIn(loggedIn)
-    if (!loggedIn) {
-      router.push("/admin")
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/check-auth")
+        if (!response.ok) {
+          throw new Error("Not authenticated")
+        }
+        setIsLoading(false)
+        // Fetch orders only if authenticated
+        const initialOrders = await fetchOrders()
+        setOrders(initialOrders)
+        updateStats(initialOrders)
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        router.push("/admin")
+      }
     }
+    checkAuth()
   }, [router])
 
   useEffect(() => {
-    const fetchInitialOrders = async () => {
-      const initialOrders = await fetchOrders()
-      setOrders(initialOrders)
-      updateStats(initialOrders)
-    }
+    if (!isLoading) {
+      const subscription = listenToOrders((update) => {
+        if (update.type === "insert" || update.type === "update") {
+          setOrders((prevOrders) => {
+            const newOrders = [update.result, ...prevOrders.filter((order) => order._id !== update.result._id)]
+            updateStats(newOrders)
+            return newOrders
+          })
+        }
+      })
 
-    fetchInitialOrders()
-
-    const subscription = listenToOrders((update) => {
-      if (update.type === "insert" || update.type === "update") {
-        setOrders((prevOrders) => {
-          const newOrders = [update.result, ...prevOrders.filter((order) => order._id !== update.result._id)]
-          updateStats(newOrders)
-          return newOrders
-        })
+      return () => {
+        subscription.unsubscribe()
       }
-    })
-
-    return () => {
-      subscription.unsubscribe()
     }
-  }, [])
+  }, [isLoading])
 
   const updateStats = (orders: Order[]) => {
     const revenue = orders.reduce((sum, order) => sum + order.total, 0)
@@ -69,8 +75,8 @@ export default function DashboardPage() {
     setTotalCustomers(uniqueCustomers.size)
   }
 
-  if (!isLoggedIn) {
-    return null // or a loading spinner
+  if (isLoading) {
+    return <div>Loading...</div>
   }
 
   return (

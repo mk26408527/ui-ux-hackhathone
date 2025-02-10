@@ -1,154 +1,128 @@
-"use client";
+"use client"
 
-import { useState, useEffect} from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { DashboardNav } from "@/components/dashboard-nav";
-import { UserNav } from "@/components/user-nav";
-import { Package, Edit, Trash2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { fetchOrdersWithProducts, listenToOrdersWithProducts } from "@/sanity/lib/fetchData";
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import Image from "next/image"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { DashboardNav } from "@/components/dashboard-nav"
+import { UserNav } from "@/components/user-nav"
+import { Package, Edit, Trash2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast"
+import { fetchOrdersWithProducts, listenToOrdersWithProducts } from "@/sanity/lib/fetchData"
 
 type Order = {
-  _id: string;
-  orderNumber: string;
+  _id: string
+  orderNumber: string
   customer: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
+    firstName: string
+    lastName: string
+    email: string
+  }
   items: {
-    productId: string;
-    name: string;
-    quantity: number;
-    price: number;
-    image: string;
-  }[];
-  total: number;
-  status: "Pending" | "Processing" | "Shipped" | "Delivered";
-  createdAt: string;
-};
+    productId: string
+    name: string
+    quantity: number
+    price: number
+    image: string
+  }[]
+  total: number
+  status: "Pending" | "Processing" | "Shipped" | "Delivered"
+  createdAt: string
+}
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const router = useRouter();
-  const { toast } = useToast();
+  const [orders, setOrders] = useState<Order[]>([])
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
+  const { toast } = useToast()
 
-  // Login check: verify login status and redirect if necessary.
   useEffect(() => {
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-    setIsLoggedIn(loggedIn);
-    if (!loggedIn) {
-      toast({
-        title: "Unauthorized",
-        description: "Please log in to view orders.",
-        variant: "destructive",
-      });
-      router.push("/admin");
-    } else {
-      // Fetch orders once logged in
-      fetchOrdersWithProducts().then(setOrders);
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/check-auth")
+        if (response.ok) {
+          setIsLoading(false)
+          // Fetch orders once authenticated
+          fetchOrdersWithProducts().then(setOrders)
 
-      const subscription = listenToOrdersWithProducts((update) => {
-        if (update.type === "insert" || update.type === "update") {
-          setOrders((prevOrders) => {
-            const updatedOrder = update.result;
-            const index = prevOrders.findIndex(
-              (order) => order._id === updatedOrder._id
-            );
-            if (index !== -1) {
-              const newOrders = [...prevOrders];
-              newOrders[index] = updatedOrder;
-              return newOrders;
-            } else {
-              return [updatedOrder, ...prevOrders];
+          const subscription = listenToOrdersWithProducts((update) => {
+            if (update.type === "insert" || update.type === "update") {
+              setOrders((prevOrders) => {
+                const updatedOrder = update.result
+                const index = prevOrders.findIndex((order) => order._id === updatedOrder._id)
+                if (index !== -1) {
+                  const newOrders = [...prevOrders]
+                  newOrders[index] = updatedOrder
+                  return newOrders
+                } else {
+                  return [updatedOrder, ...prevOrders]
+                }
+              })
+            } else if (update.type === "delete") {
+              setOrders((prevOrders) => prevOrders.filter((order) => order._id !== update.documentId))
             }
-          });
-        } else if (update.type === "delete") {
-          setOrders((prevOrders) =>
-            prevOrders.filter((order) => order._id !== update.documentId)
-          );
-        }
-      });
+          })
 
-      return () => subscription.unsubscribe();
+          return () => subscription.unsubscribe()
+        } else {
+          throw new Error("Not authenticated")
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        toast({
+          title: "Unauthorized",
+          description: "Please log in to view orders.",
+          variant: "destructive",
+        })
+        router.push("/admin")
+      }
     }
-  }, [router, toast]);
+    checkAuth()
+  }, [router, toast])
 
   const handleStatusChange = (orderId: string, newStatus: Order["status"]) => {
     setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order._id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
+      prevOrders.map((order) => (order._id === orderId ? { ...order, status: newStatus } : order)),
+    )
     toast({
       title: "Order status updated",
       description: `Order #${orderId} status changed to ${newStatus}.`,
-    });
-  };
+    })
+  }
 
   const handleEditOrder = (order: Order) => {
-    setEditingOrder(order);
-  };
+    setEditingOrder(order)
+  }
 
   const handleSaveEdit = (updatedOrder: Order) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order._id === updatedOrder._id ? updatedOrder : order
-      )
-    );
-    setEditingOrder(null);
+    setOrders((prevOrders) => prevOrders.map((order) => (order._id === updatedOrder._id ? updatedOrder : order)))
+    setEditingOrder(null)
     toast({
       title: "Order updated",
       description: `Order #${updatedOrder.orderNumber} has been successfully updated.`,
-    });
-  };
+    })
+  }
 
   const handleDeleteOrder = (orderId: string) => {
-    setOrders((prevOrders) =>
-      prevOrders.filter((order) => order._id !== orderId)
-    );
+    setOrders((prevOrders) => prevOrders.filter((order) => order._id !== orderId))
     toast({
       title: "Order deleted",
       description: `Order #${orderId} has been successfully deleted.`,
-    });
-  };
+    })
+  }
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -157,9 +131,7 @@ export default function OrdersPage() {
         <div className="py-4 px-3">
           <Link href="/dashboard" className="flex items-center pl-2.5 mb-5">
             <Package className="h-6 w-6 mr-2 text-blue-600" />
-            <span className="self-center text-xl font-semibold whitespace-nowrap dark:text-white">
-              Furniture Store
-            </span>
+            <span className="self-center text-xl font-semibold whitespace-nowrap dark:text-white">Furniture Store</span>
           </Link>
           <DashboardNav />
         </div>
@@ -168,9 +140,7 @@ export default function OrdersPage() {
         {/* Header */}
         <header className="z-10 py-4 bg-white shadow-md dark:bg-gray-800">
           <div className="container flex items-center justify-between h-full px-6 mx-auto">
-            <h1 className="text-2xl font-semibold text-gray-700 dark:text-gray-200">
-              Orders
-            </h1>
+            <h1 className="text-2xl font-semibold text-gray-700 dark:text-gray-200">Orders</h1>
             <UserNav />
           </div>
         </header>
@@ -220,9 +190,7 @@ export default function OrdersPage() {
                           <TableCell>
                             <Select
                               value={order.status}
-                              onValueChange={(value: Order["status"]) =>
-                                handleStatusChange(order._id, value)
-                              }
+                              onValueChange={(value: Order["status"]) => handleStatusChange(order._id, value)}
                             >
                               <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="Status" />
@@ -247,11 +215,7 @@ export default function OrdersPage() {
                             <div className="flex space-x-2">
                               <Dialog>
                                 <DialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleEditOrder(order)}
-                                  >
+                                  <Button variant="outline" size="sm" onClick={() => handleEditOrder(order)}>
                                     <Edit className="w-4 h-4" />
                                     <span className="sr-only">Edit order {order.orderNumber}</span>
                                   </Button>
@@ -268,13 +232,15 @@ export default function OrdersPage() {
                                         </Label>
                                         <Input
                                           id="customer"
-                                          value={`${editingOrder.customer.firstName} ${editingOrder.customer.lastName}` || ""}
+                                          value={
+                                            `${editingOrder.customer.firstName} ${editingOrder.customer.lastName}` || ""
+                                          }
                                           onChange={(e) => {
-                                            const [firstName = "", lastName = ""] = e.target.value.split(" ");
+                                            const [firstName = "", lastName = ""] = e.target.value.split(" ")
                                             setEditingOrder({
                                               ...editingOrder,
                                               customer: { ...editingOrder.customer, firstName, lastName },
-                                            });
+                                            })
                                           }}
                                           className="col-span-3"
                                         />
@@ -301,11 +267,7 @@ export default function OrdersPage() {
                                   </DialogContent>
                                 )}
                               </Dialog>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleDeleteOrder(order._id)}
-                              >
+                              <Button variant="destructive" size="sm" onClick={() => handleDeleteOrder(order._id)}>
                                 <Trash2 className="w-4 h-4" />
                                 <span className="sr-only">Delete order {order.orderNumber}</span>
                               </Button>
@@ -322,5 +284,6 @@ export default function OrdersPage() {
         </main>
       </div>
     </div>
-  );
+  )
 }
+
