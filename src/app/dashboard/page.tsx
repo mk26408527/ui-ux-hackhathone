@@ -11,6 +11,7 @@ import { RecentSales } from "@/components/recent-sales"
 import { Package, DollarSign, Users, CreditCard, Activity } from "lucide-react"
 import { fetchOrders, listenToOrders } from "@/sanity/lib/fetchData"
 
+
 interface Order {
   _id: string
   orderNumber: string
@@ -81,7 +82,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
-      <aside className="hidden w-64 overflow-y-auto bg-white dark:bg-gray-800 md:block">
+      <aside className="hidden md:block w-64 overflow-y-auto bg-white dark:bg-gray-800">
         <div className="py-4 px-3">
           <Link href="/dashboard" className="flex items-center pl-2.5 mb-5">
             <Package className="h-6 w-6 mr-2 text-blue-600" />
@@ -93,14 +94,16 @@ export default function DashboardPage() {
       <div className="flex flex-col flex-1">
         <header className="z-10 py-4 bg-white shadow-md dark:bg-gray-800">
           <div className="container flex items-center justify-between h-full px-6 mx-auto">
-            <h1 className="text-2xl font-semibold text-gray-700 dark:text-gray-200">Dashboard</h1>
+            <div className="flex items-center">
+              <h1 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 ml-2">Dashboard</h1>
+            </div>
             <UserNav />
           </div>
         </header>
         <main className="h-full overflow-y-auto">
-          <div className="container px-6 mx-auto grid">
-            <div className="py-6">
-              <div className="grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-4">
+          <div className="container px-4 mx-auto">
+            <div className="py-4">
+              <div className="grid gap-4 mb-8 md:grid-cols-2 xl:grid-cols-4">
                 <Card>
                   <CardContent className="flex items-center">
                     <div className="p-3 mr-4 text-orange-500 bg-orange-100 rounded-full dark:text-orange-100 dark:bg-orange-500">
@@ -157,8 +160,8 @@ export default function DashboardPage() {
                 </Card>
               </div>
 
-              <div className="grid gap-6 mb-8 md:grid-cols-2">
-                <Card>
+              <div className="grid gap-4 mb-8 md:grid-cols-2">
+                <Card className="col-span-2 md:col-span-1">
                   <CardHeader>
                     <CardTitle className="text-xl font-semibold text-gray-700 dark:text-gray-200">
                       Sales Overview
@@ -168,7 +171,7 @@ export default function DashboardPage() {
                     <Overview />
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="col-span-2 md:col-span-1">
                   <CardHeader>
                     <CardTitle className="text-xl font-semibold text-gray-700 dark:text-gray-200">
                       Recent Sales

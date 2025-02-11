@@ -65,6 +65,11 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
+        <Link href="dashboard">  
+        <DropdownMenuItem>
+            Dashboard
+            <DropdownMenuShortcut>⌘D</DropdownMenuShortcut>
+          </DropdownMenuItem></Link>
        <Link href="profile"> 
          <DropdownMenuItem>
             Profile
@@ -74,6 +79,16 @@ export function UserNav() {
         <DropdownMenuItem>
             Orders
             <DropdownMenuShortcut>⌘O</DropdownMenuShortcut>
+          </DropdownMenuItem></Link>
+          <Link href="analytics">  
+        <DropdownMenuItem>
+            Analytics
+            <DropdownMenuShortcut>⌘A</DropdownMenuShortcut>
+          </DropdownMenuItem></Link>
+          <Link href="customers">  
+        <DropdownMenuItem>
+            Customer
+            <DropdownMenuShortcut>⌘C</DropdownMenuShortcut>
           </DropdownMenuItem></Link>
         <Link href="products">   
         <DropdownMenuItem>
